@@ -136,6 +136,10 @@
         <option value="심리">💖 심리</option>
       </select>
     </div>
+    <div class="field">
+      <label>완료일</label>
+      <input type="date" id="bookDate">
+    </div>
     <button class="btn-add" id="addBtn" onclick="addBook()">+ 등록하기</button>
   </div>
 
@@ -245,8 +249,9 @@ async function addBook() {
   btn.disabled = true;
   btn.textContent = '저장 중...';
 
-  const now = new Date().toISOString();
-  const newBook = { id: Date.now(), title, cat, date: now };
+  const dateVal = document.getElementById('bookDate').value;
+  const date = dateVal ? dateVal : new Date().toISOString().slice(0,10);
+  const newBook = { id: Date.now(), title, cat, date };
 
   try {
     await fetch(API, {
@@ -256,6 +261,7 @@ async function addBook() {
     books.push(newBook);
     document.getElementById('bookTitle').value = '';
     document.getElementById('bookCat').value = '';
+    document.getElementById('bookDate').value = '';
     render();
     showToast('✅ 등록됐어요!');
   } catch (e) {
