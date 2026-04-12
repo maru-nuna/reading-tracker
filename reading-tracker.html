@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="독서지도">
+<title>✏️ 나의 학습 지도</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+    background: #0f0f14;
+    color: #e8e8f0;
+    min-height: 100vh;
+    padding: 48px 16px 40px;
+  }
+
+  h1 { text-align: center; font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; color: #fff; }
+  .subtitle { text-align: center; font-size: 0.8rem; color: #666; margin-bottom: 28px; }
+  .container { max-width: 480px; margin: 0 auto; }
+
+  .sync-status {
+    text-align: center;
+    font-size: 0.75rem;
+    color: #555;
+    margin-bottom: 12px;
+    height: 16px;
+  }
+  .sync-status.error { color: #ff6b6b; }
+  .sync-status.ok { color: #6c63ff; }
+
+  .chart-wrap { display: flex; justify-content: center; margin-bottom: 28px; }
+  canvas#radar { width: 100%; max-width: 340px; height: auto; }
+
+  .card { background: #1a1a24; border: 1px solid #2a2a38; border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+  .card h2 { font-size: 0.85rem; font-weight: 600; margin-bottom: 16px; color: #aaa; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 0.75rem; color: #888; margin-bottom: 6px; }
+  .field input, .field select {
+    width: 100%; background: #0f0f14; border: 1px solid #2a2a38; border-radius: 8px;
+    padding: 11px 12px; color: #e8e8f0; font-size: 0.9rem; font-family: inherit;
+    outline: none; transition: border-color 0.2s; -webkit-appearance: none;
+  }
+  .field input:focus, .field select:focus { border-color: #6c63ff; }
+  .field select option { background: #1a1a24; }
+
+  .btn-add {
+    width: 100%; padding: 13px;
+    background: linear-gradient(135deg, #6c63ff, #a855f7);
+    border: none; border-radius: 10px; color: #fff;
+    font-size: 0.95rem; font-weight: 600; cursor: pointer;
+    font-family: inherit; transition: opacity 0.2s, transform 0.1s;
+  }
+  .btn-add:active { transform: scale(0.98); opacity: 0.9; }
+  .btn-add:disabled { opacity: 0.5; }
+
+  .stat-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .stat-label { width: 68px; font-size: 0.82rem; white-space: nowrap; flex-shrink: 0; }
+  .stat-bar-bg { flex: 1; height: 8px; background: #2a2a38; border-radius: 4px; overflow: hidden; }
+  .stat-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; background: linear-gradient(90deg, #6c63ff, #a855f7); }
+  .stat-count { width: 28px; text-align: right; font-size: 0.82rem; color: #a855f7; font-weight: 600; }
+
+  .book-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #2a2a38; gap: 10px; }
+  .book-item:last-child { border-bottom: none; }
+  .book-info { flex: 1; min-width: 0; }
+  .book-title { font-size: 0.88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .book-meta { display: flex; gap: 8px; align-items: center; margin-top: 3px; }
+  .book-cat { font-size: 0.75rem; color: #888; }
+  .book-date { font-size: 0.72rem; color: #555; }
+  .btn-del { background: none; border: none; color: #444; font-size: 1rem; cursor: pointer; padding: 6px; transition: color 0.2s; flex-shrink: 0; }
+  .btn-del:active { color: #ff6b6b; }
+
+  .empty { text-align: center; color: #444; font-size: 0.85rem; padding: 16px 0; }
+  .total-badge { display: inline-block; background: #2a2a38; border-radius: 20px; padding: 2px 10px; font-size: 0.75rem; color: #a855f7; margin-left: 8px; font-weight: 600; vertical-align: middle; }
+
+  .overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6); z-index: 100;
+    align-items: center; justify-content: center;
+  }
+  .overlay.show { display: flex; }
+  .dialog {
+    background: #1a1a24; border: 1px solid #2a2a38;
+    border-radius: 20px; padding: 28px 24px 20px;
+    width: 280px; text-align: center;
+  }
+  .dialog-title { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+  .dialog-body { font-size: 0.82rem; color: #888; margin-bottom: 24px; line-height: 1.5; }
+  .dialog-btns { display: flex; gap: 10px; }
+  .dialog-btns button { flex: 1; padding: 11px; border-radius: 10px; border: none; font-size: 0.9rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn-cancel { background: #2a2a38; color: #aaa; }
+  .btn-confirm { background: #ff6b6b; color: #fff; }
+
+  .toast {
+    position: fixed; bottom: 32px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #2a2a38; color: #e8e8f0;
+    padding: 10px 20px; border-radius: 20px;
+    font-size: 0.85rem; opacity: 0; transition: all 0.3s;
+    pointer-events: none; white-space: nowrap; z-index: 999;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>✏️ 나의 학습 지도</h1>
+  <p class="subtitle">균형잡힌 학습을 위한 시각화</p>
+  <div id="syncStatus" class="sync-status"></div>
+
+  <div class="chart-wrap">
+    <canvas id="radar" width="340" height="340"></canvas>
+  </div>
+
+  <div class="card">
+    <h2>✏️ 책 등록</h2>
+    <div class="field">
+      <label>책 제목</label>
+      <input type="text" id="bookTitle" placeholder="읽은 책 제목을 입력하세요">
+    </div>
+    <div class="field">
+      <label>분야</label>
+      <select id="bookCat">
+        <option value="">분야 선택</option>
+        <option value="경제">💰 경제</option>
+        <option value="육아">👶 육아</option>
+        <option value="철학">🧠 철학</option>
+        <option value="예술">🎨 예술</option>
+        <option value="역사">📜 역사</option>
+        <option value="문화">🌍 문화</option>
+        <option value="과학">🔬 과학</option>
+        <option value="심리">💖 심리</option>
+      </select>
+    </div>
+    <button class="btn-add" id="addBtn" onclick="addBook()">+ 등록하기</button>
+  </div>
+
+  <div class="card">
+    <h2>📊 분야별 현황 <span class="total-badge" id="totalBadge">0권</span></h2>
+    <div id="statsList"></div>
+  </div>
+
+  <div class="card">
+    <h2>📖 등록된 책</h2>
+    <div id="bookList"></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="dialog">
+    <div class="dialog-title">🗑 삭제할까요?</div>
+    <div class="dialog-body" id="dialogBody"></div>
+    <div class="dialog-btns">
+      <button class="btn-cancel" onclick="closeDialog()">취소</button>
+      <button class="btn-confirm" id="confirmBtn">삭제</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbynUT5bE7IQyjNw0m2Qs5IPRNReNvAGXHcufF4i9LUvf9h5GM4p57V3U3QNB_AwZzd9Zw/exec';
+
+const CATEGORIES = [
+  { key: '경제', label: '💰 경제' },
+  { key: '육아', label: '👶 육아' },
+  { key: '철학', label: '🧠 철학' },
+  { key: '예술', label: '🎨 예술' },
+  { key: '역사', label: '📜 역사' },
+  { key: '문화', label: '🌍 문화' },
+  { key: '과학', label: '🔬 과학' },
+  { key: '심리', label: '💖 심리' },
+];
+
+let books = [];
+
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d)) return '';
+  return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function setSyncStatus(msg, type) {
+  const el = document.getElementById('syncStatus');
+  el.textContent = msg;
+  el.className = 'sync-status' + (type ? ' ' + type : '');
+}
+
+let pendingDeleteId = null;
+
+function confirmDelete(id, title) {
+  pendingDeleteId = id;
+  document.getElementById('dialogBody').innerHTML = `"${title}"을(를)<br>정말 삭제하시겠어요?`;
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('confirmBtn').onclick = () => { closeDialog(); doDelete(pendingDeleteId); };
+}
+
+function closeDialog() {
+  document.getElementById('overlay').classList.remove('show');
+  pendingDeleteId = null;
+}
+
+document.getElementById('overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeDialog();
+});
+
+async function loadBooks() {
+  setSyncStatus('동기화 중...', '');
+  // 먼저 빈 그래프 그려두기
+  render();
+  try {
+    const res = await fetch(API);
+    const data = await res.json();
+    books = Array.isArray(data) ? data : [];
+    setSyncStatus('', '');
+    render();
+  } catch (e) {
+    // 실패해도 빈 그래프 유지, 조용히 재시도
+    setSyncStatus('⚠️ 동기화 실패 — 오프라인 상태일 수 있어요', 'error');
+    // 30초 후 자동 재시도
+    setTimeout(loadBooks, 30000);
+  }
+}
+
+async function addBook() {
+  const title = document.getElementById('bookTitle').value.trim();
+  const cat = document.getElementById('bookCat').value;
+  if (!title) { showToast('책 제목을 입력해주세요!'); return; }
+  if (!cat) { showToast('분야를 선택해주세요!'); return; }
+
+  const btn = document.getElementById('addBtn');
+  btn.disabled = true;
+  btn.textContent = '저장 중...';
+
+  const now = new Date().toISOString();
+  const newBook = { id: Date.now(), title, cat, date: now };
+
+  try {
+    await fetch(API, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'add', ...newBook })
+    });
+    books.push(newBook);
+    document.getElementById('bookTitle').value = '';
+    document.getElementById('bookCat').value = '';
+    render();
+    showToast('✅ 등록됐어요!');
+  } catch (e) {
+    showToast('저장 실패. 다시 시도해주세요.');
+  }
+
+  btn.disabled = false;
+  btn.textContent = '+ 등록하기';
+}
+
+async function doDelete(id) {
+  try {
+    await fetch(API, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'delete', id })
+    });
+    books = books.filter(b => String(b.id) !== String(id));
+    render();
+    showToast('🗑 삭제됐어요');
+  } catch (e) {
+    showToast('삭제 실패. 다시 시도해주세요.');
+  }
+}
+
+function getCounts() {
+  const counts = {};
+  CATEGORIES.forEach(c => counts[c.key] = 0);
+  books.forEach(b => { if (counts[b.cat] !== undefined) counts[b.cat]++; });
+  return counts;
+}
+
+function render() {
+  const counts = getCounts();
+  const total = books.length;
+  document.getElementById('totalBadge').textContent = total + '권';
+
+  const max = Math.max(...Object.values(counts), 1);
+  document.getElementById('statsList').innerHTML = CATEGORIES.map(c => `
+    <div class="stat-row">
+      <span class="stat-label">${c.label}</span>
+      <div class="stat-bar-bg">
+        <div class="stat-bar-fill" style="width:${counts[c.key] === 0 ? '2%' : (counts[c.key]/max)*100 + '%'}"></div>
+      </div>
+      <span class="stat-count">${counts[c.key]}</span>
+    </div>
+  `).join('');
+
+  const listEl = document.getElementById('bookList');
+  if (books.length === 0) {
+    listEl.innerHTML = '<p class="empty">아직 등록된 책이 없어요</p>';
+  } else {
+    listEl.innerHTML = [...books].reverse().map(b => {
+      const cat = CATEGORIES.find(c => c.key === b.cat);
+      const dateStr = formatDate(b.date);
+      return `
+        <div class="book-item">
+          <div class="book-info">
+            <div class="book-title">${b.title}</div>
+            <div class="book-meta">
+              <span class="book-cat">${cat ? cat.label : b.cat}</span>
+              ${dateStr ? `<span class="book-date">· ${dateStr}</span>` : ''}
+            </div>
+          </div>
+          <button class="btn-del" onclick="confirmDelete(${b.id}, '${b.title.replace(/'/g, "\\'")}')">✕</button>
+        </div>
+      `;
+    }).join('');
+  }
+
+  drawRadar(counts);
+}
+
+function drawRadar(counts) {
+  const canvas = document.getElementById('radar');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const cx = W/2, cy = H/2;
+  const maxR = Math.min(W,H) * 0.36;
+  const n = CATEGORIES.length;
+  const vals = CATEGORIES.map(c => counts[c.key]);
+  const maxVal = Math.max(...vals, 5);
+
+  function angle(i) { return (Math.PI * 2 * i / n) - Math.PI / 2; }
+  function pt(i, r) { return { x: cx + r * Math.cos(angle(i)), y: cy + r * Math.sin(angle(i)) }; }
+
+  for (let g = 1; g <= 4; g++) {
+    const r = maxR * g / 4;
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) { const p = pt(i,r); i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y); }
+    ctx.closePath();
+    ctx.strokeStyle = g===4 ? '#3a3a50' : '#2a2a38';
+    ctx.lineWidth = 1; ctx.stroke();
+  }
+
+  for (let i = 0; i < n; i++) {
+    const p = pt(i, maxR);
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(p.x,p.y);
+    ctx.strokeStyle = '#2a2a38'; ctx.lineWidth = 1; ctx.stroke();
+  }
+
+  ctx.beginPath();
+  for (let i = 0; i < n; i++) {
+    const r = (vals[i]/maxVal)*maxR;
+    const p = pt(i,r);
+    i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y);
+  }
+  ctx.closePath();
+  const grad = ctx.createRadialGradient(cx,cy,0,cx,cy,maxR);
+  grad.addColorStop(0,'rgba(168,85,247,0.5)');
+  grad.addColorStop(1,'rgba(108,99,255,0.2)');
+  ctx.fillStyle = grad; ctx.fill();
+  ctx.strokeStyle = '#a855f7'; ctx.lineWidth = 2; ctx.stroke();
+
+  for (let i = 0; i < n; i++) {
+    const r = (vals[i]/maxVal)*maxR;
+    const p = pt(i,r);
+    ctx.beginPath(); ctx.arc(p.x,p.y,4,0,Math.PI*2);
+    ctx.fillStyle='#fff'; ctx.fill();
+    ctx.strokeStyle='#a855f7'; ctx.lineWidth=2; ctx.stroke();
+  }
+
+  const labelR = maxR + 28;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  CATEGORIES.forEach((c,i) => {
+    const p = pt(i, labelR);
+    const [emoji, name] = c.label.split(' ');
+    ctx.font='bold 14px Apple SD Gothic Neo,sans-serif';
+    ctx.fillStyle='#e8e8f0'; ctx.fillText(emoji, p.x, p.y-7);
+    ctx.font='11px Apple SD Gothic Neo,sans-serif';
+    ctx.fillStyle='#888'; ctx.fillText(name, p.x, p.y+8);
+  });
+}
+
+document.getElementById('bookTitle').addEventListener('keydown', e => {
+  if (e.key==='Enter') addBook();
+});
+
+loadBooks();
+</script>
+</body>
+</html>
