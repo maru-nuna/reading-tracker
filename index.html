@@ -9,176 +9,158 @@
 <title>✏️ 나의 학습 지도</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Apple SD Gothic Neo','Noto Sans KR',sans-serif; background:#0f0f14; color:#e8e8f0; min-height:100vh; padding:48px 16px 40px; }
+  h1 { text-align:center; font-size:1.4rem; font-weight:700; letter-spacing:-0.02em; margin-bottom:4px; color:#fff; }
+  .subtitle { text-align:center; font-size:0.8rem; color:#666; margin-bottom:28px; }
+  .container { max-width:480px; margin:0 auto; }
+  .sync-status { text-align:center; font-size:0.75rem; color:#555; margin-bottom:12px; height:16px; }
+  .sync-status.error { color:#ff6b6b; }
+  .chart-wrap { display:flex; justify-content:center; margin-bottom:28px; }
+  canvas#radar { width:100%; max-width:340px; height:auto; }
+  .card { background:#1a1a24; border:1px solid #2a2a38; border-radius:16px; padding:20px; margin-bottom:20px; }
+  .card h2 { font-size:0.85rem; font-weight:600; margin-bottom:16px; color:#aaa; text-transform:uppercase; letter-spacing:0.05em; }
 
-  body {
-    font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
-    background: #0f0f14;
-    color: #e8e8f0;
-    min-height: 100vh;
-    padding: 48px 16px 40px;
-  }
-
-  h1 { text-align: center; font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; color: #fff; }
-  .subtitle { text-align: center; font-size: 0.8rem; color: #666; margin-bottom: 28px; }
-  .container { max-width: 480px; margin: 0 auto; }
-
-  .sync-status { text-align: center; font-size: 0.75rem; color: #555; margin-bottom: 12px; height: 16px; }
-  .sync-status.error { color: #ff6b6b; }
-
-  .chart-wrap { display: flex; justify-content: center; margin-bottom: 28px; }
-  canvas#radar { width: 100%; max-width: 340px; height: auto; }
-
-  .card { background: #1a1a24; border: 1px solid #2a2a38; border-radius: 16px; padding: 20px; margin-bottom: 20px; }
-  .card h2 { font-size: 0.85rem; font-weight: 600; margin-bottom: 16px; color: #aaa; text-transform: uppercase; letter-spacing: 0.05em; }
-
-  .field { margin-bottom: 12px; }
-  .field label { display: block; font-size: 0.75rem; color: #888; margin-bottom: 6px; text-align: left; }
-
+  /* 폼 */
+  .field { margin-bottom:12px; }
+  .field label { display:block; font-size:0.75rem; color:#888; margin-bottom:6px; }
   .field input, .field select {
-    width: 100%; background: #0f0f14; border: 1px solid #2a2a38; border-radius: 8px;
-    padding: 11px 12px; font-size: 0.9rem; font-family: inherit;
-    outline: none; transition: border-color 0.2s;
-    text-align: left; -webkit-appearance: none; appearance: none;
-    color: #e8e8f0;
+    width:100%; background:#0f0f14; border:1px solid #2a2a38; border-radius:8px;
+    padding:11px 12px; font-size:0.9rem; font-family:inherit;
+    outline:none; transition:border-color 0.2s; text-align:left;
+    -webkit-appearance:none; appearance:none; color:#e8e8f0;
   }
-  .field input::placeholder { color: #555; }
-  .field input:focus, .field select:focus { border-color: #6c63ff; }
+  .field input::placeholder { color:#555; }
+  .field input:focus, .field select:focus { border-color:#6c63ff; }
+  .field input.error, .field select.error { border-color:#a855f7 !important; }
+  .field select { color:#555; }
+  .field select.has-value { color:#e8e8f0; }
+  .field select option { background:#1a1a24; color:#e8e8f0; }
+  .field select option[value=""] { color:#555; }
+  .select-wrap { position:relative; }
+  .select-wrap select { padding-right:36px; }
+  .select-wrap::after { content:'▾'; position:absolute; right:13px; top:50%; transform:translateY(-50%); color:#666; font-size:0.9rem; pointer-events:none; }
+  .date-wrap { position:relative; }
+  .date-wrap input[type="date"] { cursor:pointer; color:transparent; }
+  .date-wrap input[type="date"].has-value { color:#e8e8f0; }
+  .date-wrap input[type="date"]::-webkit-datetime-edit { color:transparent; }
+  .date-wrap input[type="date"].has-value::-webkit-datetime-edit { color:#e8e8f0; }
+  .date-wrap input[type="date"]::-webkit-calendar-picker-indicator { filter:invert(0.5); cursor:pointer; opacity:1; }
+  .date-placeholder { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#555; font-size:0.9rem; pointer-events:none; transition:opacity 0.15s; }
+  .btn-add { width:100%; padding:13px; background:linear-gradient(135deg,#6c63ff,#a855f7); border:none; border-radius:10px; color:#fff; font-size:0.95rem; font-weight:600; cursor:pointer; font-family:inherit; transition:opacity 0.2s,transform 0.1s; }
+  .btn-add:active { transform:scale(0.98); opacity:0.9; }
+  .btn-add:disabled { opacity:0.5; }
 
-  /* 필수항목 오류 강조 */
-  .field input.error, .field select.error, .date-wrap.error input { border-color: #a855f7 !important; }
-
-  /* 분야 select placeholder 톤다운 */
-  .field select { color: #555; }
-  .field select.has-value { color: #e8e8f0; }
-  .field select option { background: #1a1a24; color: #e8e8f0; }
-  .field select option[value=""] { color: #555; }
-
-  /* 분야 드롭다운 화살표 */
-  .select-wrap { position: relative; }
-  .select-wrap select { padding-right: 36px; }
-  .select-wrap::after {
-    content: '▾'; position: absolute; right: 13px; top: 50%; transform: translateY(-50%);
-    color: #666; font-size: 0.9rem; pointer-events: none;
-  }
-
-  /* 날짜 입력 커스텀 */
-  .date-wrap { position: relative; }
-  .date-wrap input[type="date"] { cursor: pointer; color: transparent; }
-  .date-wrap input[type="date"].has-value { color: #e8e8f0; }
-  .date-wrap input[type="date"]::-webkit-datetime-edit { color: transparent; }
-  .date-wrap input[type="date"].has-value::-webkit-datetime-edit { color: #e8e8f0; }
-  .date-wrap input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.5); cursor: pointer; opacity: 1; }
-  .date-placeholder {
-    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
-    color: #555; font-size: 0.9rem; pointer-events: none; transition: opacity 0.15s;
-  }
-
-  .btn-add {
-    width: 100%; padding: 13px;
-    background: linear-gradient(135deg, #6c63ff, #a855f7);
-    border: none; border-radius: 10px; color: #fff;
-    font-size: 0.95rem; font-weight: 600; cursor: pointer;
-    font-family: inherit; transition: opacity 0.2s, transform 0.1s;
-  }
-  .btn-add:active { transform: scale(0.98); opacity: 0.9; }
-  .btn-add:disabled { opacity: 0.5; }
-
-  .stat-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-  .stat-label { width: 68px; font-size: 0.82rem; white-space: nowrap; flex-shrink: 0; }
-  .stat-bar-bg { flex: 1; height: 8px; background: #2a2a38; border-radius: 4px; overflow: hidden; }
-  .stat-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; background: linear-gradient(90deg, #6c63ff, #a855f7); }
-  .stat-count { width: 28px; text-align: right; font-size: 0.82rem; color: #a855f7; font-weight: 600; }
+  /* 분야별 현황 */
+  .stat-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .stat-label { width:68px; font-size:0.82rem; white-space:nowrap; flex-shrink:0; }
+  .stat-bar-bg { flex:1; height:8px; background:#2a2a38; border-radius:4px; overflow:hidden; }
+  .stat-bar-fill { height:100%; border-radius:4px; transition:width 0.5s ease; background:linear-gradient(90deg,#6c63ff,#a855f7); }
+  .stat-count { width:28px; text-align:right; font-size:0.82rem; color:#a855f7; font-weight:600; }
 
   /* 책 목록 */
-  .book-item { padding: 12px 0; border-bottom: 1px solid #2a2a38; }
-  .book-item:last-child { border-bottom: none; }
-  .book-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; cursor: pointer; }
-  .book-info { flex: 1; min-width: 0; }
-  .book-title { font-size: 0.88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .book-meta { display: flex; gap: 8px; align-items: center; margin-top: 3px; flex-wrap: wrap; }
-  .book-cat { font-size: 0.75rem; color: #888; }
-  .book-date { font-size: 0.72rem; color: #555; }
-  .book-stars { font-size: 0.82rem; margin-top: 2px; }
-  .book-review { font-size: 0.78rem; color: #888; margin-top: 4px; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .book-item { padding:12px 0; border-bottom:1px solid #2a2a38; }
+  .book-item:last-child { border-bottom:none; }
+  .book-row { display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer; background:transparent; border-radius:8px; margin:0 -6px; padding:0 6px; transition:background 0.15s; }
+  .book-row:active { background:#2a2a38; }
+  .book-info { flex:1; min-width:0; }
+  .book-title { font-size:0.88rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .book-meta { display:flex; gap:8px; align-items:center; margin-top:3px; flex-wrap:wrap; }
+  .book-cat { font-size:0.75rem; color:#888; }
+  .book-date { font-size:0.72rem; color:#555; }
+  .book-stars { font-size:0.82rem; margin-top:2px; }
+  .book-review { font-size:0.78rem; color:#888; margin-top:4px; font-style:italic; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .empty { text-align:center; color:#444; font-size:0.85rem; padding:16px 0; }
+  .total-badge { display:inline-block; background:#2a2a38; border-radius:20px; padding:2px 10px; font-size:0.75rem; color:#a855f7; margin-left:8px; font-weight:600; vertical-align:middle; }
 
-  .empty { text-align: center; color: #444; font-size: 0.85rem; padding: 16px 0; }
-  .total-badge { display: inline-block; background: #2a2a38; border-radius: 20px; padding: 2px 10px; font-size: 0.75rem; color: #a855f7; margin-left: 8px; font-weight: 600; vertical-align: middle; }
+  /* 읽을 책 목록 */
+  .wish-cat-item { display:flex; align-items:center; justify-content:space-between; padding:11px 6px; border-bottom:1px solid #2a2a38; cursor:pointer; border-radius:8px; margin:0 -6px; transition:background 0.15s; }
+  .wish-cat-item:last-child { border-bottom:none; }
+  .wish-cat-item:active { background:#2a2a38; }
+  .wish-cat-right { display:flex; align-items:center; gap:8px; }
+  .wish-cat-count { font-size:0.75rem; color:#a855f7; font-weight:600; }
 
-  /* 삭제 확인 팝업 */
-  .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: flex-end; justify-content: center; }
-  .overlay.show { display: flex; }
+  /* 오버레이 공통 */
+  .overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:100; align-items:flex-end; justify-content:center; }
+  .overlay.show { display:flex; }
+  .bottom-sheet { background:#1a1a24; border:1px solid #2a2a38; border-radius:20px 20px 0 0; padding:20px 20px 36px; width:100%; max-width:480px; transform:translateY(100%); transition:transform 0.3s ease; }
+  .overlay.show .bottom-sheet { transform:translateY(0); }
+  .sheet-handle { width:36px; height:4px; background:#3a3a50; border-radius:2px; margin:0 auto 18px; }
 
   /* 책 상세 바텀시트 */
-  .bottom-sheet {
-    background: #1a1a24;
-    border: 1px solid #2a2a38;
-    border-radius: 20px 20px 0 0;
-    padding: 20px 20px 36px;
-    width: 100%;
-    max-width: 480px;
-    transform: translateY(100%);
-    transition: transform 0.3s ease;
-  }
-  .overlay.show .bottom-sheet { transform: translateY(0); }
-
-  .sheet-handle { width: 36px; height: 4px; background: #3a3a50; border-radius: 2px; margin: 0 auto 18px; }
-  .sheet-book-title { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
-  .sheet-book-meta { font-size: 0.78rem; color: #666; margin-bottom: 18px; }
-  .sheet-label { font-size: 0.72rem; color: #666; margin-bottom: 8px; }
-
-  .stars-input { display: flex; gap: 8px; margin-bottom: 16px; }
-  .star-btn { background: none; border: none; font-size: 1.6rem; cursor: pointer; padding: 2px; line-height: 1; transition: transform 0.1s; }
-  .star-btn:active { transform: scale(1.2); }
-
-  .review-input {
-    width: 100%; background: #0f0f14; border: 1px solid #2a2a38;
-    border-radius: 8px; padding: 10px 12px; color: #e8e8f0;
-    font-size: 0.88rem; font-family: inherit; outline: none;
-    resize: none; transition: border-color 0.2s; text-align: left;
-  }
-  .review-input:focus { border-color: #6c63ff; }
-  .review-input::placeholder { color: #555; }
-
-  .sheet-btns { display: flex; gap: 10px; margin-top: 14px; }
-  .btn-save-review {
-    flex: 1; padding: 12px; background: linear-gradient(135deg, #6c63ff, #a855f7);
-    border: none; border-radius: 10px; color: #fff;
-    font-size: 0.9rem; font-weight: 600; cursor: pointer; font-family: inherit;
-  }
-  .btn-del-book {
-    padding: 12px 16px; background: #2a2a38;
-    border: none; border-radius: 10px; color: #ff6b6b;
-    font-size: 0.9rem; font-weight: 600; cursor: pointer; font-family: inherit;
-  }
-
-  /* 삭제 확인 다이얼로그 */
-  .del-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center; }
-  .del-overlay.show { display: flex; }
-  .dialog { background: #1a1a24; border: 1px solid #2a2a38; border-radius: 20px; padding: 28px 24px 20px; width: 280px; text-align: center; }
-  .dialog-title { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
-  .dialog-body { font-size: 0.82rem; color: #888; margin-bottom: 24px; line-height: 1.5; }
-  .dialog-btns { display: flex; gap: 10px; }
-  .dialog-btns button { flex: 1; padding: 11px; border-radius: 10px; border: none; font-size: 0.9rem; font-weight: 600; cursor: pointer; font-family: inherit; }
-  .btn-cancel { background: #2a2a38; color: #aaa; }
-  .btn-confirm { background: #ff6b6b; color: #fff; }
-
+  .sheet-book-title { font-size:1rem; font-weight:700; margin-bottom:4px; }
+  .sheet-book-meta { font-size:0.78rem; color:#666; margin-bottom:18px; }
+  .sheet-label { font-size:0.72rem; color:#666; margin-bottom:8px; }
+  .stars-input { display:flex; gap:8px; margin-bottom:16px; }
+  .star-btn { background:none; border:none; font-size:1.6rem; cursor:pointer; padding:2px; line-height:1; transition:transform 0.1s; }
+  .star-btn:active { transform:scale(1.2); }
+  .review-input { width:100%; background:#0f0f14; border:1px solid #2a2a38; border-radius:8px; padding:10px 12px; color:#e8e8f0; font-size:0.88rem; font-family:inherit; outline:none; resize:none; transition:border-color 0.2s; }
+  .review-input:focus { border-color:#6c63ff; }
+  .review-input::placeholder { color:#555; }
+  .sheet-btns { display:flex; gap:10px; margin-top:14px; }
+  .btn-save-review { flex:1; padding:12px; background:linear-gradient(135deg,#6c63ff,#a855f7); border:none; border-radius:10px; color:#fff; font-size:0.9rem; font-weight:600; cursor:pointer; font-family:inherit; }
+  .btn-del-book { padding:12px 16px; background:#2a2a38; border:none; border-radius:10px; color:#ff6b6b; font-size:0.9rem; font-weight:600; cursor:pointer; font-family:inherit; }
 
   /* 카테고리 바텀시트 */
-  .cat-sheet { max-height: 70vh; display: flex; flex-direction: column; }
-  .cat-sheet-header { flex-shrink: 0; margin-bottom: 16px; }
-  .cat-sheet-name { font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; }
-  .cat-sheet-desc { font-size: 0.82rem; color: #888; line-height: 1.5; }
-  .cat-sheet-divider { height: 1px; background: #2a2a38; margin-bottom: 14px; flex-shrink: 0; }
-  .cat-book-list { overflow-y: auto; flex: 1; }
-  .cat-book-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #2a2a38; cursor: pointer; }
-  .cat-book-item:last-child { border-bottom: none; }
-  .cat-book-name { font-size: 0.88rem; font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .cat-book-info { font-size: 0.72rem; color: #555; flex-shrink: 0; }
-  .cat-book-stars { font-size: 0.75rem; }
-  .cat-empty { text-align: center; color: #444; font-size: 0.85rem; padding: 24px 0; }
-  .cat-count-badge { display: inline-block; background: #2a2a38; border-radius: 20px; padding: 2px 10px; font-size: 0.72rem; color: #a855f7; margin-left: 8px; font-weight: 600; vertical-align: middle; }
-  .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(20px); background: #2a2a38; color: #e8e8f0; padding: 10px 20px; border-radius: 20px; font-size: 0.85rem; opacity: 0; transition: all 0.3s; pointer-events: none; white-space: nowrap; z-index: 999; }
-  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .cat-sheet { max-height:70vh; display:flex; flex-direction:column; }
+  .cat-sheet-header { flex-shrink:0; margin-bottom:16px; }
+  .cat-sheet-name { font-size:1.1rem; font-weight:700; margin-bottom:6px; }
+  .cat-sheet-desc { font-size:0.82rem; color:#888; line-height:1.5; }
+  .cat-sheet-divider { height:1px; background:#2a2a38; margin-bottom:14px; flex-shrink:0; }
+  .cat-book-list { overflow-y:auto; flex:1; }
+  .cat-book-item { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid #2a2a38; cursor:pointer; }
+  .cat-book-item:last-child { border-bottom:none; }
+  .cat-book-name { font-size:0.88rem; font-weight:600; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .cat-book-info { font-size:0.72rem; color:#555; flex-shrink:0; }
+  .cat-book-stars { font-size:0.75rem; }
+  .cat-empty { text-align:center; color:#444; font-size:0.85rem; padding:24px 0; }
+  .cat-count-badge { display:inline-block; background:#2a2a38; border-radius:20px; padding:2px 10px; font-size:0.72rem; color:#a855f7; margin-left:8px; font-weight:600; vertical-align:middle; }
+
+  /* 위시리스트 바텀시트 */
+  .wish-sheet { max-height:85vh; display:flex; flex-direction:column; }
+  .wish-sheet-name { font-size:1rem; font-weight:700; margin-bottom:4px; }
+  .wish-sheet-desc { font-size:0.78rem; color:#888; margin-bottom:16px; line-height:1.5; }
+  .wish-add-box { background:#0f0f14; border:1px solid #2a2a38; border-radius:12px; padding:12px; margin-bottom:14px; flex-shrink:0; }
+  .wish-add-row { display:flex; gap:8px; margin-bottom:8px; }
+  .wish-add-row:last-child { margin-bottom:0; }
+  .wish-input { flex:1; background:#1a1a24; border:1px solid #2a2a38; border-radius:8px; padding:9px 11px; color:#e8e8f0; font-size:0.86rem; font-family:inherit; outline:none; transition:border-color 0.2s; }
+  .wish-input:focus { border-color:#6c63ff; }
+  .wish-input::placeholder { color:#555; }
+  .wish-input.error { border-color:#a855f7; }
+  .btn-wish-add { padding:9px 14px; background:linear-gradient(135deg,#6c63ff,#a855f7); border:none; border-radius:8px; color:#fff; font-size:0.86rem; font-weight:600; cursor:pointer; font-family:inherit; white-space:nowrap; }
+  .wish-divider { height:1px; background:#2a2a38; margin-bottom:12px; flex-shrink:0; }
+  .wish-list { overflow-y:auto; flex:1; }
+  .wish-item { padding:12px 0; border-bottom:1px solid #2a2a38; }
+  .wish-item:last-child { border-bottom:none; }
+  .wish-item-title { font-size:0.88rem; font-weight:600; margin-bottom:3px; }
+  .wish-item-sub { font-size:0.75rem; color:#666; margin-bottom:6px; }
+  .wish-item-reason { font-size:0.78rem; color:#888; font-style:italic; }
+  .wish-item-actions { display:flex; gap:6px; margin-top:8px; }
+  .wish-btn { background:none; border:1px solid #2a2a38; cursor:pointer; padding:5px 10px; font-size:0.78rem; font-family:inherit; border-radius:6px; transition:all 0.15s; }
+  .wish-btn-edit { color:#6c63ff; border-color:#6c63ff; }
+  .wish-btn-del { color:#555; }
+  .wish-btn-del:active { color:#ff6b6b; border-color:#ff6b6b; }
+  .wish-edit-box { background:#0f0f14; border:1px solid #2a2a38; border-radius:10px; padding:10px; margin-top:8px; }
+  .wish-edit-input { width:100%; background:#1a1a24; border:1px solid #2a2a38; border-radius:7px; padding:8px 10px; color:#e8e8f0; font-size:0.85rem; font-family:inherit; outline:none; margin-bottom:7px; }
+  .wish-edit-input:focus { border-color:#6c63ff; }
+  .wish-edit-input::placeholder { color:#555; }
+  .wish-edit-actions { display:flex; gap:6px; }
+  .btn-wish-save { flex:1; padding:8px; background:linear-gradient(135deg,#6c63ff,#a855f7); border:none; border-radius:7px; color:#fff; font-size:0.82rem; font-weight:600; cursor:pointer; font-family:inherit; }
+  .btn-wish-cancel { padding:8px 12px; background:#2a2a38; border:none; border-radius:7px; color:#aaa; font-size:0.82rem; cursor:pointer; font-family:inherit; }
+  .wish-empty { text-align:center; color:#444; font-size:0.85rem; padding:24px 0; }
+
+  /* 삭제 확인 다이얼로그 */
+  .del-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; align-items:center; justify-content:center; }
+  .del-overlay.show { display:flex; }
+  .dialog { background:#1a1a24; border:1px solid #2a2a38; border-radius:20px; padding:28px 24px 20px; width:280px; text-align:center; }
+  .dialog-title { font-size:1rem; font-weight:700; margin-bottom:8px; }
+  .dialog-body { font-size:0.82rem; color:#888; margin-bottom:24px; line-height:1.5; }
+  .dialog-btns { display:flex; gap:10px; }
+  .dialog-btns button { flex:1; padding:11px; border-radius:10px; border:none; font-size:0.9rem; font-weight:600; cursor:pointer; font-family:inherit; }
+  .btn-cancel { background:#2a2a38; color:#aaa; }
+  .btn-confirm { background:#ff6b6b; color:#fff; }
+
+  .toast { position:fixed; bottom:32px; left:50%; transform:translateX(-50%) translateY(20px); background:#2a2a38; color:#e8e8f0; padding:10px 20px; border-radius:20px; font-size:0.85rem; opacity:0; transition:all 0.3s; pointer-events:none; white-space:nowrap; z-index:999; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
@@ -187,9 +169,7 @@
   <p class="subtitle">균형잡힌 학습을 위한 시각화</p>
   <div id="syncStatus" class="sync-status"></div>
 
-  <div class="chart-wrap">
-    <canvas id="radar" width="340" height="340"></canvas>
-  </div>
+  <div class="chart-wrap"><canvas id="radar" width="340" height="340"></canvas></div>
 
   <div class="card">
     <h2>✏️ 책 등록</h2>
@@ -215,7 +195,7 @@
     </div>
     <div class="field">
       <label>완독일</label>
-      <div class="date-wrap" id="dateWrap">
+      <div class="date-wrap">
         <input type="date" id="bookDate">
         <span class="date-placeholder" id="datePlaceholder">날짜 선택</span>
       </div>
@@ -232,11 +212,16 @@
     <h2>📖 등록된 책</h2>
     <div id="bookList"></div>
   </div>
+
+  <div class="card">
+    <h2>🔖 읽을 책</h2>
+    <div id="wishCatList"></div>
+  </div>
 </div>
 
 <!-- 책 상세 바텀시트 -->
 <div class="overlay" id="sheetOverlay">
-  <div class="bottom-sheet" id="bottomSheet">
+  <div class="bottom-sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-book-title" id="sheetTitle"></div>
     <div class="sheet-book-meta" id="sheetMeta"></div>
@@ -251,10 +236,9 @@
   </div>
 </div>
 
-
 <!-- 카테고리 바텀시트 -->
 <div class="overlay" id="catOverlay">
-  <div class="bottom-sheet cat-sheet" id="catSheet">
+  <div class="bottom-sheet cat-sheet">
     <div class="sheet-handle"></div>
     <div class="cat-sheet-header">
       <div class="cat-sheet-name" id="catSheetName"></div>
@@ -262,6 +246,29 @@
     </div>
     <div class="cat-sheet-divider"></div>
     <div class="cat-book-list" id="catBookList"></div>
+  </div>
+</div>
+
+<!-- 위시리스트 바텀시트 -->
+<div class="overlay" id="wishOverlay">
+  <div class="bottom-sheet wish-sheet">
+    <div class="sheet-handle"></div>
+    <div class="wish-sheet-name" id="wishSheetName"></div>
+    <div class="wish-sheet-desc" id="wishSheetDesc"></div>
+    <div class="wish-add-box">
+      <div class="wish-add-row">
+        <input class="wish-input" id="wishInputTitle" placeholder="읽고 싶은 책 제목 (필수)">
+        <button class="btn-wish-add" onclick="addWish()">+ 추가</button>
+      </div>
+      <div class="wish-add-row">
+        <input class="wish-input" id="wishInputAuthor" placeholder="저자 (선택)">
+      </div>
+      <div class="wish-add-row">
+        <input class="wish-input" id="wishInputReason" placeholder="읽고 싶은 이유 (필수)">
+      </div>
+    </div>
+    <div class="wish-divider"></div>
+    <div class="wish-list" id="wishList"></div>
   </div>
 </div>
 
@@ -280,44 +287,43 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const API = 'https://script.google.com/macros/s/AKfycbwmxzJYfQOUTkkO_b3JHSEK_EJI7yVALR5tZnj3ipP8eNvc5Rxvg86Pe6yEAkGoGTzf9A/exec';
+const API = 'https://script.google.com/macros/s/AKfycbx8z5UwPTw0uO07WuCkICAzC7hLSQ4X8EjYqrY8K39ZGE7Pnn7jcjPAvJkydTQM93aTmQ/exec';
 
 const CATEGORIES = [
-  { key: '경제', label: '💰 경제', desc: '돈으로부터 자유로워지기 위한 구조를 배운다' },
-  { key: '육아', label: '👶 육아', desc: '흔들리지 않는 행복한 엄마가 되는 방법을 배운다' },
-  { key: '철학', label: '🧠 철학', desc: '나의 기준을 어떻게 세울지 배운다' },
-  { key: '예술', label: '🎨 예술', desc: '아는 만큼 보이는 힘을 기른다' },
-  { key: '역사', label: '📜 역사', desc: '반복되는 패턴과 변수에 대응하는 지혜를 배운다' },
-  { key: '문화', label: '🌍 문화', desc: '다름을 배운다' },
-  { key: '과학', label: '🔬 과학', desc: '세상이 실제로 어떻게 작동하는지 배운다' },
-  { key: '심리', label: '💖 심리', desc: '왜 그렇게 행동하는지 이해하는 방법을 배운다' },
+  { key:'경제', label:'💰 경제', desc:'돈으로부터 자유로워지기 위한 구조를 배운다' },
+  { key:'육아', label:'👶 육아', desc:'흔들리지 않는 행복한 엄마가 되는 방법을 배운다' },
+  { key:'철학', label:'🧠 철학', desc:'나의 기준을 어떻게 세울지 배운다' },
+  { key:'예술', label:'🎨 예술', desc:'아는 만큼 보이는 힘을 기른다' },
+  { key:'역사', label:'📜 역사', desc:'반복되는 패턴과 변수에 대응하는 지혜를 배운다' },
+  { key:'문화', label:'🌍 문화', desc:'다름을 배운다' },
+  { key:'과학', label:'🔬 과학', desc:'세상이 실제로 어떻게 작동하는지 배운다' },
+  { key:'심리', label:'💖 심리', desc:'왜 그렇게 행동하는지 이해하는 방법을 배운다' },
 ];
 
 let books = [];
-let sheetBookId = null; // 현재 열린 바텀시트의 책 id
+let wishlist = [];
+let sheetBookId = null;
+let editingWishId = null;
+let wishCatKey = null;
 
 function loadReviews() { try { return JSON.parse(localStorage.getItem('reviews') || '{}'); } catch { return {}; } }
 function saveReviews(r) { localStorage.setItem('reviews', JSON.stringify(r)); }
 
-// 날짜 placeholder
+// ── 날짜 placeholder ──
 const bookDateEl = document.getElementById('bookDate');
 const datePlaceholderEl = document.getElementById('datePlaceholder');
 bookDateEl.addEventListener('change', () => {
-  if (bookDateEl.value) { bookDateEl.classList.add('has-value'); datePlaceholderEl.style.opacity = '0'; }
-  else { bookDateEl.classList.remove('has-value'); datePlaceholderEl.style.opacity = '1'; }
+  if (bookDateEl.value) { bookDateEl.classList.add('has-value'); datePlaceholderEl.style.opacity='0'; }
+  else { bookDateEl.classList.remove('has-value'); datePlaceholderEl.style.opacity='1'; }
 });
-bookDateEl.addEventListener('focus', () => { datePlaceholderEl.style.opacity = '0'; });
-bookDateEl.addEventListener('blur', () => { if (!bookDateEl.value) datePlaceholderEl.style.opacity = '1'; });
+bookDateEl.addEventListener('focus', () => { datePlaceholderEl.style.opacity='0'; });
+bookDateEl.addEventListener('blur', () => { if (!bookDateEl.value) datePlaceholderEl.style.opacity='1'; });
 
-// 분야 선택 시 색상 변경
-function onCatChange(el) {
-  el.classList.toggle('has-value', !!el.value);
-  el.classList.remove('error');
-}
+function onCatChange(el) { el.classList.toggle('has-value', !!el.value); el.classList.remove('error'); }
 
 function formatDate(dateStr) {
   if (!dateStr) return '';
-  const d = new Date(dateStr + (dateStr.length === 10 ? 'T00:00:00' : ''));
+  const d = new Date(dateStr + (dateStr.length===10?'T00:00:00':''));
   if (isNaN(d)) return '';
   return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
 }
@@ -331,60 +337,42 @@ function showToast(msg) {
 function setSyncStatus(msg, type) {
   const el = document.getElementById('syncStatus');
   el.textContent = msg;
-  el.className = 'sync-status' + (type ? ' ' + type : '');
+  el.className = 'sync-status' + (type ? ' '+type : '');
 }
 
-// ── 바텀시트 ──
+// ── 책 상세 바텀시트 ──
 function openSheet(bookId) {
   sheetBookId = bookId;
   const b = books.find(b => String(b.id) === String(bookId));
   if (!b) return;
   const cat = CATEGORIES.find(c => c.key === b.cat);
-  const reviews = loadReviews();
-  const rv = reviews[bookId] || {};
-  const rating = rv.rating || 0;
-
+  const rv = (loadReviews())[bookId] || {};
   document.getElementById('sheetTitle').textContent = b.title;
-  document.getElementById('sheetMeta').textContent = `${cat ? cat.label : b.cat}${b.date ? '  ·  ' + formatDate(b.date) : ''}`;
+  document.getElementById('sheetMeta').textContent = `${cat?cat.label:b.cat}${b.date?' · '+formatDate(b.date):''}`;
   document.getElementById('sheetReview').value = rv.text || '';
-  renderSheetStars(rating);
-
+  renderSheetStars(rv.rating || 0);
   document.getElementById('sheetOverlay').classList.add('show');
 }
-
-function closeSheet() {
-  document.getElementById('sheetOverlay').classList.remove('show');
-  sheetBookId = null;
-}
-
-document.getElementById('sheetOverlay').addEventListener('click', function(e) {
-  if (e.target === this) closeSheet();
-});
+function closeSheet() { document.getElementById('sheetOverlay').classList.remove('show'); sheetBookId = null; }
+document.getElementById('sheetOverlay').addEventListener('click', function(e) { if(e.target===this) closeSheet(); });
 
 function renderSheetStars(rating) {
   document.getElementById('sheetStars').innerHTML = [1,2,3,4,5].map(i =>
-    `<button class="star-btn" onclick="setSheetStar(${i})">${i <= rating ? '⭐' : '☆'}</button>`
+    `<button class="star-btn" onclick="setSheetStar(${i})">${i<=rating?'⭐':'☆'}</button>`
   ).join('');
 }
-
 function setSheetStar(rating) {
   const reviews = loadReviews();
   if (!reviews[sheetBookId]) reviews[sheetBookId] = {};
   reviews[sheetBookId].rating = rating;
-  saveReviews(reviews);
-  renderSheetStars(rating);
-  render();
+  saveReviews(reviews); renderSheetStars(rating); render();
 }
-
 function saveReview() {
   const text = document.getElementById('sheetReview').value.trim();
   const reviews = loadReviews();
   if (!reviews[sheetBookId]) reviews[sheetBookId] = {};
   reviews[sheetBookId].text = text;
-  saveReviews(reviews);
-  render();
-  showToast('✅ 저장됐어요!');
-  closeSheet();
+  saveReviews(reviews); render(); showToast('✅ 저장됐어요!'); closeSheet();
 }
 
 // ── 삭제 확인 ──
@@ -394,31 +382,23 @@ function askDelete() {
   document.getElementById('dialogBody').innerHTML = `"${b.title}"을(를)<br>정말 삭제하시겠어요?`;
   document.getElementById('delOverlay').classList.add('show');
 }
-
-function closeDelDialog() {
-  document.getElementById('delOverlay').classList.remove('show');
-}
-
+function closeDelDialog() { document.getElementById('delOverlay').classList.remove('show'); }
 async function doDelete() {
   closeDelDialog();
   const id = sheetBookId;
   closeSheet();
   try {
-    await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'delete', id }) });
-    // 로컬에서 즉시 제거
+    await fetch(API, { method:'POST', body:JSON.stringify({ action:'delete', id }) });
     books = books.filter(b => String(b.id) !== String(id));
     render();
     showToast('🗑 삭제됐어요');
-    // 서버에서 다시 불러와서 완전히 동기화
     const res = await fetch(API);
     const data = await res.json();
-    books = Array.isArray(data) ? data : [];
+    books = data.books || [];
+    wishlist = data.wishlist || [];
     render();
-  } catch (e) {
-    showToast('삭제 실패. 다시 시도해주세요.');
-  }
+  } catch(e) { showToast('삭제 실패. 다시 시도해주세요.'); }
 }
-
 
 // ── 카테고리 바텀시트 ──
 function openCatSheet(catKey) {
@@ -426,10 +406,8 @@ function openCatSheet(catKey) {
   if (!cat) return;
   const reviews = loadReviews();
   const catBooks = books.filter(b => b.cat === catKey);
-
   document.getElementById('catSheetName').innerHTML = `${cat.label} <span class="cat-count-badge">${catBooks.length}권</span>`;
   document.getElementById('catSheetDesc').textContent = cat.desc;
-
   const listEl = document.getElementById('catBookList');
   if (!catBooks.length) {
     listEl.innerHTML = '<p class="cat-empty">아직 등록된 책이 없어요</p>';
@@ -437,30 +415,135 @@ function openCatSheet(catKey) {
     listEl.innerHTML = [...catBooks].reverse().map(b => {
       const rv = reviews[b.id] || {};
       const rating = rv.rating || 0;
-      return `
-        <div class="cat-book-item" onclick="closeCatSheet(); setTimeout(()=>openSheet(${b.id}),200)">
-          <div style="flex:1;min-width:0;">
-            <div class="cat-book-name">${b.title}</div>
-            <div style="display:flex;gap:8px;margin-top:3px;align-items:center;">
-              ${b.date ? `<span class="cat-book-info">${formatDate(b.date)}</span>` : ''}
-              ${rating > 0 ? `<span class="cat-book-stars">${'⭐'.repeat(rating)}</span>` : ''}
-            </div>
+      return `<div class="cat-book-item" onclick="closeCatSheet();setTimeout(()=>openSheet(${b.id}),200)">
+        <div style="flex:1;min-width:0;">
+          <div class="cat-book-name">${b.title}</div>
+          <div style="display:flex;gap:8px;margin-top:3px;align-items:center;">
+            ${b.date?`<span class="cat-book-info">${formatDate(b.date)}</span>`:''}
+            ${rating>0?`<span class="cat-book-stars">${'⭐'.repeat(rating)}</span>`:''}
           </div>
-          <span style="color:#444;font-size:0.8rem;">›</span>
-        </div>`;
+        </div>
+        <span style="color:#6c63ff;font-size:1rem;font-weight:600;">›</span>
+      </div>`;
     }).join('');
   }
-
   document.getElementById('catOverlay').classList.add('show');
 }
+function closeCatSheet() { document.getElementById('catOverlay').classList.remove('show'); }
+document.getElementById('catOverlay').addEventListener('click', function(e) { if(e.target===this) closeCatSheet(); });
 
-function closeCatSheet() {
-  document.getElementById('catOverlay').classList.remove('show');
+// ── 위시리스트 바텀시트 ──
+function openWishSheet(catKey) {
+  wishCatKey = catKey;
+  editingWishId = null;
+  const cat = CATEGORIES.find(c => c.key === catKey);
+  document.getElementById('wishSheetName').textContent = cat.label;
+  document.getElementById('wishSheetDesc').textContent = cat.desc;
+  document.getElementById('wishInputTitle').value = '';
+  document.getElementById('wishInputAuthor').value = '';
+  document.getElementById('wishInputReason').value = '';
+  renderWishList();
+  document.getElementById('wishOverlay').classList.add('show');
+}
+function closeWishSheet() { document.getElementById('wishOverlay').classList.remove('show'); wishCatKey = null; editingWishId = null; }
+document.getElementById('wishOverlay').addEventListener('click', function(e) { if(e.target===this) closeWishSheet(); });
+
+function renderWishList() {
+  const catWishes = wishlist.filter(w => w.cat === wishCatKey);
+  const el = document.getElementById('wishList');
+  if (!catWishes.length) { el.innerHTML = '<p class="wish-empty">아직 추가된 책이 없어요</p>'; return; }
+  el.innerHTML = catWishes.map(w => {
+    if (editingWishId === w.id) {
+      return `<div class="wish-item">
+        <div class="wish-edit-box">
+          <input class="wish-edit-input" id="edit-title-${w.id}" value="${w.title.replace(/"/g,'&quot;')}" placeholder="책 제목 (필수)">
+          <input class="wish-edit-input" id="edit-author-${w.id}" value="${(w.author||'').replace(/"/g,'&quot;')}" placeholder="저자 (선택)">
+          <input class="wish-edit-input" id="edit-reason-${w.id}" value="${(w.reason||'').replace(/"/g,'&quot;')}" placeholder="읽고 싶은 이유 (필수)" style="margin-bottom:0">
+          <div class="wish-edit-actions" style="margin-top:8px;">
+            <button class="btn-wish-save" onclick="saveWishEdit('${w.id}')">저장</button>
+            <button class="btn-wish-cancel" onclick="editingWishId=null;renderWishList()">취소</button>
+          </div>
+        </div>
+      </div>`;
+    }
+    return `<div class="wish-item">
+      <div class="wish-item-title">${w.title}</div>
+      ${w.author ? `<div class="wish-item-sub">✍️ ${w.author}</div>` : ''}
+      ${w.reason ? `<div class="wish-item-reason">"${w.reason}"</div>` : ''}
+      <div class="wish-item-actions">
+        <button class="wish-btn wish-btn-edit" onclick="startEditWish('${w.id}')">수정</button>
+        <button class="wish-btn wish-btn-del" onclick="deleteWish('${w.id}')">삭제</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
-document.getElementById('catOverlay').addEventListener('click', function(e) {
-  if (e.target === this) closeCatSheet();
-});
+async function addWish() {
+  const titleEl = document.getElementById('wishInputTitle');
+  const reasonEl = document.getElementById('wishInputReason');
+  const title = titleEl.value.trim();
+  const author = document.getElementById('wishInputAuthor').value.trim();
+  const reason = reasonEl.value.trim();
+
+  titleEl.classList.remove('error'); reasonEl.classList.remove('error');
+  let hasError = false;
+  if (!title) { titleEl.classList.add('error'); hasError = true; }
+  if (!reason) { reasonEl.classList.add('error'); hasError = true; }
+  if (hasError) { showToast('제목과 이유를 입력해주세요!'); return; }
+
+  const newWish = { id: String(Date.now()), title, author, reason, cat: wishCatKey };
+  try {
+    await fetch(API, { method:'POST', body:JSON.stringify({ action:'wish_add', ...newWish }) });
+    wishlist.push(newWish);
+    titleEl.value = ''; document.getElementById('wishInputAuthor').value = ''; reasonEl.value = '';
+    renderWishList(); renderWishCats();
+    showToast('✅ 추가됐어요!');
+  } catch(e) { showToast('추가 실패. 다시 시도해주세요.'); }
+}
+
+function startEditWish(id) {
+  editingWishId = id; renderWishList();
+  setTimeout(() => { const el = document.getElementById('edit-title-'+id); if(el) el.focus(); }, 50);
+}
+
+async function saveWishEdit(id) {
+  const titleEl = document.getElementById('edit-title-'+id);
+  const reasonEl = document.getElementById('edit-reason-'+id);
+  const title = titleEl ? titleEl.value.trim() : '';
+  const author = (document.getElementById('edit-author-'+id)||{}).value?.trim() || '';
+  const reason = reasonEl ? reasonEl.value.trim() : '';
+  if (!title || !reason) { showToast('제목과 이유를 입력해주세요!'); return; }
+  try {
+    await fetch(API, { method:'POST', body:JSON.stringify({ action:'wish_edit', id, title, author, reason }) });
+    const w = wishlist.find(w => w.id === id);
+    if (w) { w.title = title; w.author = author; w.reason = reason; }
+    editingWishId = null; renderWishList(); renderWishCats();
+    showToast('✅ 수정됐어요!');
+  } catch(e) { showToast('수정 실패. 다시 시도해주세요.'); }
+}
+
+async function deleteWish(id) {
+  try {
+    await fetch(API, { method:'POST', body:JSON.stringify({ action:'wish_delete', id }) });
+    wishlist = wishlist.filter(w => w.id !== id);
+    renderWishList(); renderWishCats();
+    showToast('🗑 삭제됐어요');
+  } catch(e) { showToast('삭제 실패. 다시 시도해주세요.'); }
+}
+
+function renderWishCats() {
+  const el = document.getElementById('wishCatList');
+  el.innerHTML = CATEGORIES.map(c => {
+    const count = wishlist.filter(w => w.cat === c.key).length;
+    return `<div class="wish-cat-item" onclick="openWishSheet('${c.key}')">
+      <span style="font-size:0.88rem;">${c.label}</span>
+      <div class="wish-cat-right">
+        <span class="wish-cat-count">${count}권</span>
+        <span style="color:#6c63ff;font-size:1rem;font-weight:600;">›</span>
+      </div>
+    </div>`;
+  }).join('');
+}
 
 // ── 데이터 로드 ──
 async function loadBooks() {
@@ -469,10 +552,11 @@ async function loadBooks() {
   try {
     const res = await fetch(API);
     const data = await res.json();
-    books = Array.isArray(data) ? data : [];
+    books = data.books || [];
+    wishlist = data.wishlist || [];
     setSyncStatus('', '');
     render();
-  } catch (e) {
+  } catch(e) {
     setSyncStatus('⚠️ 동기화 실패 — 새로고침 해주세요', 'error');
     setTimeout(loadBooks, 30000);
   }
@@ -484,49 +568,32 @@ async function addBook() {
   const catEl = document.getElementById('bookCat');
   const title = titleEl.value.trim();
   const cat = catEl.value;
-
-  // 오류 초기화
-  titleEl.classList.remove('error');
-  catEl.classList.remove('error');
-
+  titleEl.classList.remove('error'); catEl.classList.remove('error');
   let hasError = false;
   if (!title) { titleEl.classList.add('error'); hasError = true; }
   if (!cat) { catEl.classList.add('error'); hasError = true; }
-
-  if (hasError) {
-    showToast(!title && !cat ? '책 제목과 분야를 입력해주세요!' : !title ? '책 제목을 입력해주세요!' : '분야를 선택해주세요!');
-    return;
-  }
-
+  if (hasError) { showToast(!title&&!cat?'책 제목과 분야를 입력해주세요!':!title?'책 제목을 입력해주세요!':'분야를 선택해주세요!'); return; }
   const btn = document.getElementById('addBtn');
   btn.disabled = true; btn.textContent = '저장 중...';
-
   const dateVal = bookDateEl.value;
   const date = dateVal ? dateVal : new Date().toISOString().slice(0,10);
   const newBook = { id: Date.now(), title, cat, date };
-
   try {
-    await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'add', ...newBook }) });
+    await fetch(API, { method:'POST', body:JSON.stringify({ action:'add', ...newBook }) });
     books.push(newBook);
     titleEl.value = ''; catEl.value = ''; bookDateEl.value = '';
-    catEl.classList.remove('has-value');
-    datePlaceholderEl.style.opacity = '1';
-    bookDateEl.classList.remove('has-value');
-    render();
-    showToast('✅ 등록됐어요!');
-  } catch (e) {
-    showToast('저장 실패. 다시 시도해주세요.');
-  }
+    catEl.classList.remove('has-value'); datePlaceholderEl.style.opacity='1'; bookDateEl.classList.remove('has-value');
+    render(); showToast('✅ 등록됐어요!');
+  } catch(e) { showToast('저장 실패. 다시 시도해주세요.'); }
   btn.disabled = false; btn.textContent = '+ 등록하기';
 }
 
-// 입력 시 오류 테두리 해제
 document.getElementById('bookTitle').addEventListener('input', function() { this.classList.remove('error'); });
 
 function getCounts() {
   const counts = {};
   CATEGORIES.forEach(c => counts[c.key] = 0);
-  books.forEach(b => { if (counts[b.cat] !== undefined) counts[b.cat]++; });
+  books.forEach(b => { if(counts[b.cat]!==undefined) counts[b.cat]++; });
   return counts;
 }
 
@@ -534,13 +601,14 @@ function render() {
   const counts = getCounts();
   const reviews = loadReviews();
   document.getElementById('totalBadge').textContent = books.length + '권';
-
   const max = Math.max(...Object.values(counts), 1);
+
   document.getElementById('statsList').innerHTML = CATEGORIES.map(c => `
-    <div class="stat-row" onclick="openCatSheet('${c.key}')" style="cursor:pointer;">
+    <div class="stat-row" onclick="openCatSheet('${c.key}')" style="cursor:pointer;margin:0 -6px;padding:4px 6px;border-radius:8px;" ontouchstart="this.style.background='#2a2a38'" ontouchend="this.style.background=''">
       <span class="stat-label">${c.label}</span>
       <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:${counts[c.key]===0?'2%':(counts[c.key]/max)*100+'%'}"></div></div>
       <span class="stat-count">${counts[c.key]}</span>
+      <span style="color:#6c63ff;font-size:1rem;font-weight:600;margin-left:4px;flex-shrink:0;">›</span>
     </div>`).join('');
 
   const listEl = document.getElementById('bookList');
@@ -552,30 +620,31 @@ function render() {
       const rv = reviews[b.id] || {};
       const rating = rv.rating || 0;
       const reviewText = rv.text || '';
-      return `
-        <div class="book-item">
-          <div class="book-row" onclick="openSheet(${b.id})">
-            <div class="book-info">
-              <div class="book-title">${b.title}</div>
-              <div class="book-meta">
-                <span class="book-cat">${cat ? cat.label : b.cat}</span>
-                ${b.date ? `<span class="book-date">· ${formatDate(b.date)}</span>` : ''}
-              </div>
-              ${rating > 0 ? `<div class="book-stars">${'⭐'.repeat(rating)}${'☆'.repeat(5-rating)}</div>` : ''}
-              ${reviewText ? `<div class="book-review">"${reviewText}"</div>` : ''}
+      return `<div class="book-item">
+        <div class="book-row" onclick="openSheet(${b.id})">
+          <div class="book-info">
+            <div class="book-title">${b.title}</div>
+            <div class="book-meta">
+              <span class="book-cat">${cat?cat.label:b.cat}</span>
+              ${b.date?`<span class="book-date">· ${formatDate(b.date)}</span>`:''}
             </div>
-            <span style="color:#444; font-size:0.8rem;">›</span>
+            ${rating>0?`<div class="book-stars">${'⭐'.repeat(rating)}${'☆'.repeat(5-rating)}</div>`:''}
+            ${reviewText?`<div class="book-review">"${reviewText}"</div>`:''}
           </div>
-        </div>`;
+          <span style="color:#6c63ff;font-size:1rem;font-weight:600;flex-shrink:0;">›</span>
+        </div>
+      </div>`;
     }).join('');
   }
+
+  renderWishCats();
   drawRadar(counts);
 }
 
 function drawRadar(counts) {
   const canvas = document.getElementById('radar');
   const ctx = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
+  const W=canvas.width, H=canvas.height;
   ctx.clearRect(0,0,W,H);
   const cx=W/2, cy=H/2, maxR=Math.min(W,H)*0.36, n=CATEGORIES.length;
   const vals=CATEGORIES.map(c=>counts[c.key]), maxVal=Math.max(...vals,5);
@@ -596,13 +665,14 @@ function drawRadar(counts) {
   for(let i=0;i<n;i++){const r=(vals[i]/maxVal)*maxR,p=pt(i,r);ctx.beginPath();ctx.arc(p.x,p.y,4,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle='#a855f7';ctx.lineWidth=2;ctx.stroke();}
   const labelR=maxR+28; ctx.textAlign='center'; ctx.textBaseline='middle';
   CATEGORIES.forEach((c,i)=>{
-    const p=pt(i,labelR), [emoji,name]=c.label.split(' ');
+    const p=pt(i,labelR),[emoji,name]=c.label.split(' ');
     ctx.font='bold 14px Apple SD Gothic Neo,sans-serif'; ctx.fillStyle='#e8e8f0'; ctx.fillText(emoji,p.x,p.y-7);
     ctx.font='11px Apple SD Gothic Neo,sans-serif'; ctx.fillStyle='#888'; ctx.fillText(name,p.x,p.y+8);
   });
 }
 
 document.getElementById('bookTitle').addEventListener('keydown', e => { if(e.key==='Enter') addBook(); });
+document.getElementById('wishInputTitle').addEventListener('keydown', e => { if(e.key==='Enter') addWish(); });
 loadBooks();
 </script>
 </body>
