@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="독서지도">
+<meta name="apple-mobile-web-app-title" content="학습지도">
 <title>✏️ 나의 학습 지도</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -22,15 +22,8 @@
   .subtitle { text-align: center; font-size: 0.8rem; color: #666; margin-bottom: 28px; }
   .container { max-width: 480px; margin: 0 auto; }
 
-  .sync-status {
-    text-align: center;
-    font-size: 0.75rem;
-    color: #555;
-    margin-bottom: 12px;
-    height: 16px;
-  }
+  .sync-status { text-align: center; font-size: 0.75rem; color: #555; margin-bottom: 12px; height: 16px; }
   .sync-status.error { color: #ff6b6b; }
-  .sync-status.ok { color: #6c63ff; }
 
   .chart-wrap { display: flex; justify-content: center; margin-bottom: 28px; }
   canvas#radar { width: 100%; max-width: 340px; height: auto; }
@@ -39,14 +32,53 @@
   .card h2 { font-size: 0.85rem; font-weight: 600; margin-bottom: 16px; color: #aaa; text-transform: uppercase; letter-spacing: 0.05em; }
 
   .field { margin-bottom: 12px; }
-  .field label { display: block; font-size: 0.75rem; color: #888; margin-bottom: 6px; }
+  .field label { display: block; font-size: 0.75rem; color: #888; margin-bottom: 6px; text-align: left; }
+
   .field input, .field select {
     width: 100%; background: #0f0f14; border: 1px solid #2a2a38; border-radius: 8px;
     padding: 11px 12px; color: #e8e8f0; font-size: 0.9rem; font-family: inherit;
-    outline: none; transition: border-color 0.2s; -webkit-appearance: none;
+    outline: none; transition: border-color 0.2s;
+    text-align: left;
+    -webkit-appearance: none; appearance: none;
   }
+  .field input::placeholder { text-align: left; color: #555; }
   .field input:focus, .field select:focus { border-color: #6c63ff; }
   .field select option { background: #1a1a24; }
+
+  /* 날짜 입력 커스텀 */
+  .date-wrap { position: relative; }
+  .date-wrap input[type="date"] {
+    cursor: pointer;
+    color: transparent;
+  }
+  .date-wrap input[type="date"].has-value {
+    color: #e8e8f0;
+  }
+  .date-wrap input[type="date"]::-webkit-datetime-edit { color: transparent; }
+  .date-wrap input[type="date"].has-value::-webkit-datetime-edit { color: #e8e8f0; }
+  .date-wrap input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.5);
+    cursor: pointer;
+    opacity: 1;
+  }
+  .date-placeholder {
+    position: absolute;
+    left: 12px; top: 50%; transform: translateY(-50%);
+    color: #555; font-size: 0.9rem;
+    pointer-events: none;
+    transition: opacity 0.15s;
+  }
+
+  /* 분야 드롭다운 화살표 */
+  .select-wrap { position: relative; }
+  .select-wrap select { padding-right: 36px; }
+  .select-wrap::after {
+    content: '\25BE';
+    position: absolute;
+    right: 13px; top: 50%; transform: translateY(-50%);
+    color: #666; font-size: 0.9rem;
+    pointer-events: none;
+  }
 
   .btn-add {
     width: 100%; padding: 13px;
@@ -64,30 +96,76 @@
   .stat-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; background: linear-gradient(90deg, #6c63ff, #a855f7); }
   .stat-count { width: 28px; text-align: right; font-size: 0.82rem; color: #a855f7; font-weight: 600; }
 
-  .book-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #2a2a38; gap: 10px; }
+  /* 책 목록 */
+  .book-item {
+    padding: 12px 0;
+    border-bottom: 1px solid #2a2a38;
+    cursor: pointer;
+  }
   .book-item:last-child { border-bottom: none; }
+
+  .book-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
   .book-info { flex: 1; min-width: 0; }
   .book-title { font-size: 0.88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .book-meta { display: flex; gap: 8px; align-items: center; margin-top: 3px; }
+  .book-meta { display: flex; gap: 8px; align-items: center; margin-top: 3px; flex-wrap: wrap; }
   .book-cat { font-size: 0.75rem; color: #888; }
   .book-date { font-size: 0.72rem; color: #555; }
+  .book-stars { font-size: 0.82rem; margin-top: 2px; }
+  .book-review { font-size: 0.78rem; color: #888; margin-top: 4px; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
   .btn-del { background: none; border: none; color: #444; font-size: 1rem; cursor: pointer; padding: 6px; transition: color 0.2s; flex-shrink: 0; }
   .btn-del:active { color: #ff6b6b; }
+
+  /* 책 상세 패널 */
+  .book-detail {
+    display: none;
+    background: #12121a;
+    border: 1px solid #2a2a38;
+    border-radius: 12px;
+    padding: 14px;
+    margin-top: 10px;
+  }
+  .book-detail.open { display: block; }
+
+  .detail-label { font-size: 0.72rem; color: #666; margin-bottom: 6px; }
+
+  .stars-input { display: flex; gap: 6px; margin-bottom: 12px; }
+  .star-btn {
+    background: none; border: none; font-size: 1.4rem;
+    cursor: pointer; padding: 2px; line-height: 1;
+    transition: transform 0.1s;
+  }
+  .star-btn:active { transform: scale(1.2); }
+
+  .review-input {
+    width: 100%; background: #1a1a24; border: 1px solid #2a2a38;
+    border-radius: 8px; padding: 9px 11px; color: #e8e8f0;
+    font-size: 0.85rem; font-family: inherit; outline: none;
+    resize: none; transition: border-color 0.2s;
+    text-align: left;
+  }
+  .review-input:focus { border-color: #6c63ff; }
+  .review-input::placeholder { color: #555; }
+
+  .detail-btns { display: flex; gap: 8px; margin-top: 10px; }
+  .btn-save-review {
+    flex: 1; padding: 9px; background: linear-gradient(135deg, #6c63ff, #a855f7);
+    border: none; border-radius: 8px; color: #fff;
+    font-size: 0.82rem; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .btn-del-book {
+    padding: 9px 14px; background: #2a2a38;
+    border: none; border-radius: 8px; color: #ff6b6b;
+    font-size: 0.82rem; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
 
   .empty { text-align: center; color: #444; font-size: 0.85rem; padding: 16px 0; }
   .total-badge { display: inline-block; background: #2a2a38; border-radius: 20px; padding: 2px 10px; font-size: 0.75rem; color: #a855f7; margin-left: 8px; font-weight: 600; vertical-align: middle; }
 
-  .overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,0.6); z-index: 100;
-    align-items: center; justify-content: center;
-  }
+  /* 삭제 확인 팝업 */
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; }
   .overlay.show { display: flex; }
-  .dialog {
-    background: #1a1a24; border: 1px solid #2a2a38;
-    border-radius: 20px; padding: 28px 24px 20px;
-    width: 280px; text-align: center;
-  }
+  .dialog { background: #1a1a24; border: 1px solid #2a2a38; border-radius: 20px; padding: 28px 24px 20px; width: 280px; text-align: center; }
   .dialog-title { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
   .dialog-body { font-size: 0.82rem; color: #888; margin-bottom: 24px; line-height: 1.5; }
   .dialog-btns { display: flex; gap: 10px; }
@@ -95,14 +173,7 @@
   .btn-cancel { background: #2a2a38; color: #aaa; }
   .btn-confirm { background: #ff6b6b; color: #fff; }
 
-  .toast {
-    position: fixed; bottom: 32px; left: 50%;
-    transform: translateX(-50%) translateY(20px);
-    background: #2a2a38; color: #e8e8f0;
-    padding: 10px 20px; border-radius: 20px;
-    font-size: 0.85rem; opacity: 0; transition: all 0.3s;
-    pointer-events: none; white-space: nowrap; z-index: 999;
-  }
+  .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(20px); background: #2a2a38; color: #e8e8f0; padding: 10px 20px; border-radius: 20px; font-size: 0.85rem; opacity: 0; transition: all 0.3s; pointer-events: none; white-space: nowrap; z-index: 999; }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
 </head>
@@ -124,6 +195,7 @@
     </div>
     <div class="field">
       <label>분야</label>
+      <div class="select-wrap">
       <select id="bookCat">
         <option value="">분야 선택</option>
         <option value="경제">💰 경제</option>
@@ -135,10 +207,14 @@
         <option value="과학">🔬 과학</option>
         <option value="심리">💖 심리</option>
       </select>
+      </div>
     </div>
     <div class="field">
       <label>완료일</label>
-      <input type="date" id="bookDate">
+      <div class="date-wrap">
+        <input type="date" id="bookDate">
+        <span class="date-placeholder" id="datePlaceholder">날짜 선택</span>
+      </div>
     </div>
     <button class="btn-add" id="addBtn" onclick="addBook()">+ 등록하기</button>
   </div>
@@ -154,6 +230,7 @@
   </div>
 </div>
 
+<!-- 삭제 확인 팝업 -->
 <div class="overlay" id="overlay">
   <div class="dialog">
     <div class="dialog-title">🗑 삭제할까요?</div>
@@ -182,10 +259,30 @@ const CATEGORIES = [
 ];
 
 let books = [];
+// 별점/한줄평은 로컬에 저장 (구글 시트 구조 변경 없이)
+function loadReviews() { try { return JSON.parse(localStorage.getItem('reviews') || '{}'); } catch { return {}; } }
+function saveReviews(r) { localStorage.setItem('reviews', JSON.stringify(r)); }
+
+// 날짜 placeholder 처리
+const bookDateEl = document.getElementById('bookDate');
+const datePlaceholderEl = document.getElementById('datePlaceholder');
+bookDateEl.addEventListener('change', () => {
+  if (bookDateEl.value) {
+    bookDateEl.classList.add('has-value');
+    datePlaceholderEl.style.opacity = '0';
+  } else {
+    bookDateEl.classList.remove('has-value');
+    datePlaceholderEl.style.opacity = '1';
+  }
+});
+bookDateEl.addEventListener('focus', () => { datePlaceholderEl.style.opacity = '0'; });
+bookDateEl.addEventListener('blur', () => {
+  if (!bookDateEl.value) datePlaceholderEl.style.opacity = '1';
+});
 
 function formatDate(dateStr) {
   if (!dateStr) return '';
-  const d = new Date(dateStr);
+  const d = new Date(dateStr + (dateStr.length === 10 ? 'T00:00:00' : ''));
   if (isNaN(d)) return '';
   return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
 }
@@ -203,27 +300,60 @@ function setSyncStatus(msg, type) {
   el.className = 'sync-status' + (type ? ' ' + type : '');
 }
 
-let pendingDeleteId = null;
+// 열려있는 상세 패널 ID
+let openDetailId = null;
 
+function toggleDetail(id) {
+  if (openDetailId === id) {
+    openDetailId = null;
+  } else {
+    openDetailId = id;
+  }
+  render();
+}
+
+function renderStars(rating, bookId) {
+  return [1,2,3,4,5].map(i =>
+    `<button class="star-btn" onclick="setStar(${bookId}, ${i})">${i <= rating ? '⭐' : '☆'}</button>`
+  ).join('');
+}
+
+function setStar(bookId, rating) {
+  const reviews = loadReviews();
+  if (!reviews[bookId]) reviews[bookId] = {};
+  reviews[bookId].rating = rating;
+  saveReviews(reviews);
+  render();
+}
+
+function saveReview(bookId) {
+  const text = document.getElementById(`review-${bookId}`).value.trim();
+  const reviews = loadReviews();
+  if (!reviews[bookId]) reviews[bookId] = {};
+  reviews[bookId].text = text;
+  saveReviews(reviews);
+  showToast('✅ 저장됐어요!');
+  render();
+}
+
+// 삭제 팝업
+let pendingDeleteId = null;
 function confirmDelete(id, title) {
   pendingDeleteId = id;
   document.getElementById('dialogBody').innerHTML = `"${title}"을(를)<br>정말 삭제하시겠어요?`;
   document.getElementById('overlay').classList.add('show');
   document.getElementById('confirmBtn').onclick = () => { closeDialog(); doDelete(pendingDeleteId); };
 }
-
 function closeDialog() {
   document.getElementById('overlay').classList.remove('show');
   pendingDeleteId = null;
 }
-
 document.getElementById('overlay').addEventListener('click', function(e) {
   if (e.target === this) closeDialog();
 });
 
 async function loadBooks() {
   setSyncStatus('동기화 중...', '');
-  // 먼저 빈 그래프 그려두기
   render();
   try {
     const res = await fetch(API);
@@ -232,9 +362,7 @@ async function loadBooks() {
     setSyncStatus('', '');
     render();
   } catch (e) {
-    // 실패해도 빈 그래프 유지, 조용히 재시도
-    setSyncStatus('⚠️ 동기화 실패 — 오프라인 상태일 수 있어요', 'error');
-    // 30초 후 자동 재시도
+    setSyncStatus('⚠️ 동기화 실패 — 새로고침 해주세요', 'error');
     setTimeout(loadBooks, 30000);
   }
 }
@@ -254,31 +382,27 @@ async function addBook() {
   const newBook = { id: Date.now(), title, cat, date };
 
   try {
-    await fetch(API, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'add', ...newBook })
-    });
+    await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'add', ...newBook }) });
     books.push(newBook);
     document.getElementById('bookTitle').value = '';
     document.getElementById('bookCat').value = '';
     document.getElementById('bookDate').value = '';
+    datePlaceholderEl.style.opacity = '1';
+    bookDateEl.classList.remove('has-value');
     render();
     showToast('✅ 등록됐어요!');
   } catch (e) {
     showToast('저장 실패. 다시 시도해주세요.');
   }
-
   btn.disabled = false;
   btn.textContent = '+ 등록하기';
 }
 
 async function doDelete(id) {
   try {
-    await fetch(API, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'delete', id })
-    });
+    await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'delete', id }) });
     books = books.filter(b => String(b.id) !== String(id));
+    if (openDetailId == id) openDetailId = null;
     render();
     showToast('🗑 삭제됐어요');
   } catch (e) {
@@ -295,8 +419,8 @@ function getCounts() {
 
 function render() {
   const counts = getCounts();
-  const total = books.length;
-  document.getElementById('totalBadge').textContent = total + '권';
+  const reviews = loadReviews();
+  document.getElementById('totalBadge').textContent = books.length + '권';
 
   const max = Math.max(...Object.values(counts), 1);
   document.getElementById('statsList').innerHTML = CATEGORIES.map(c => `
@@ -316,16 +440,35 @@ function render() {
     listEl.innerHTML = [...books].reverse().map(b => {
       const cat = CATEGORIES.find(c => c.key === b.cat);
       const dateStr = formatDate(b.date);
+      const rv = reviews[b.id] || {};
+      const rating = rv.rating || 0;
+      const reviewText = rv.text || '';
+      const isOpen = openDetailId == b.id;
+
       return `
         <div class="book-item">
-          <div class="book-info">
-            <div class="book-title">${b.title}</div>
-            <div class="book-meta">
-              <span class="book-cat">${cat ? cat.label : b.cat}</span>
-              ${dateStr ? `<span class="book-date">· ${dateStr}</span>` : ''}
+          <div class="book-row" onclick="toggleDetail(${b.id})">
+            <div class="book-info">
+              <div class="book-title">${b.title}</div>
+              <div class="book-meta">
+                <span class="book-cat">${cat ? cat.label : b.cat}</span>
+                ${dateStr ? `<span class="book-date">· ${dateStr}</span>` : ''}
+              </div>
+              ${rating > 0 ? `<div class="book-stars">${'⭐'.repeat(rating)}${'☆'.repeat(5-rating)}</div>` : ''}
+              ${reviewText ? `<div class="book-review">"${reviewText}"</div>` : ''}
+            </div>
+            <span style="color:#444; font-size:0.8rem;">${isOpen ? '▲' : '▼'}</span>
+          </div>
+          <div class="book-detail ${isOpen ? 'open' : ''}">
+            <div class="detail-label">별점</div>
+            <div class="stars-input">${renderStars(rating, b.id)}</div>
+            <div class="detail-label">한 줄 평</div>
+            <textarea class="review-input" id="review-${b.id}" rows="2" placeholder="이 책에 대한 한 줄 평을 남겨보세요">${reviewText}</textarea>
+            <div class="detail-btns">
+              <button class="btn-save-review" onclick="saveReview(${b.id})">저장</button>
+              <button class="btn-del-book" onclick="confirmDelete(${b.id}, '${b.title.replace(/'/g, "\\'")}')">삭제</button>
             </div>
           </div>
-          <button class="btn-del" onclick="confirmDelete(${b.id}, '${b.title.replace(/'/g, "\\'")}')">✕</button>
         </div>
       `;
     }).join('');
@@ -339,7 +482,6 @@ function drawRadar(counts) {
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
   ctx.clearRect(0, 0, W, H);
-
   const cx = W/2, cy = H/2;
   const maxR = Math.min(W,H) * 0.36;
   const n = CATEGORIES.length;
@@ -354,20 +496,16 @@ function drawRadar(counts) {
     ctx.beginPath();
     for (let i = 0; i < n; i++) { const p = pt(i,r); i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y); }
     ctx.closePath();
-    ctx.strokeStyle = g===4 ? '#3a3a50' : '#2a2a38';
-    ctx.lineWidth = 1; ctx.stroke();
+    ctx.strokeStyle = g===4 ? '#3a3a50' : '#2a2a38'; ctx.lineWidth = 1; ctx.stroke();
   }
-
   for (let i = 0; i < n; i++) {
     const p = pt(i, maxR);
     ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(p.x,p.y);
     ctx.strokeStyle = '#2a2a38'; ctx.lineWidth = 1; ctx.stroke();
   }
-
   ctx.beginPath();
   for (let i = 0; i < n; i++) {
-    const r = (vals[i]/maxVal)*maxR;
-    const p = pt(i,r);
+    const r = (vals[i]/maxVal)*maxR; const p = pt(i,r);
     i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y);
   }
   ctx.closePath();
@@ -376,15 +514,12 @@ function drawRadar(counts) {
   grad.addColorStop(1,'rgba(108,99,255,0.2)');
   ctx.fillStyle = grad; ctx.fill();
   ctx.strokeStyle = '#a855f7'; ctx.lineWidth = 2; ctx.stroke();
-
   for (let i = 0; i < n; i++) {
-    const r = (vals[i]/maxVal)*maxR;
-    const p = pt(i,r);
+    const r = (vals[i]/maxVal)*maxR; const p = pt(i,r);
     ctx.beginPath(); ctx.arc(p.x,p.y,4,0,Math.PI*2);
     ctx.fillStyle='#fff'; ctx.fill();
     ctx.strokeStyle='#a855f7'; ctx.lineWidth=2; ctx.stroke();
   }
-
   const labelR = maxR + 28;
   ctx.textAlign='center'; ctx.textBaseline='middle';
   CATEGORIES.forEach((c,i) => {
