@@ -240,12 +240,12 @@
   </div>
 
   <div class="card">
-    <h2>📊 분야별 현황 <span class="total-badge" id="totalBadge" onclick="openAllBooksSheet()" style="cursor:pointer;">0권</span></h2>
+    <h2>📊 분야별 현황 <span class="total-badge" id="totalBadge" onclick="openAllBooksSheet()" style="cursor:pointer;">0권 ›</span></h2>
     <div id="statsList"></div>
   </div>
 
   <div class="card">
-    <h2>🔖 읽고 싶은 책 <span class="total-badge" id="wishTotalBadge" onclick="openAllWishSheet()" style="cursor:pointer;">0권</span></h2>
+    <h2>🔖 읽고 싶은 책 <span class="total-badge" id="wishTotalBadge" onclick="openAllWishSheet()" style="cursor:pointer;">0권 ›</span></h2>
     <div id="wishCatList"></div>
   </div>
 </div>
@@ -292,10 +292,8 @@
   <div class="bottom-sheet cat-sheet">
     <div class="sheet-handle"></div>
     <div class="cat-sheet-header">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-        <div class="cat-sheet-name" id="allWishTitle"></div>
-        <div style="display:flex;gap:6px;" id="allWishSortBtns"></div>
-      </div>
+      <div class="cat-sheet-name" id="allWishTitle" style="margin-bottom:10px;"></div>
+      <div style="display:flex;gap:6px;" id="allWishSortBtns"></div>
     </div>
     <div class="cat-sheet-divider"></div>
     <div class="cat-book-list" id="allWishList"></div>
@@ -307,10 +305,8 @@
   <div class="bottom-sheet cat-sheet">
     <div class="sheet-handle"></div>
     <div class="cat-sheet-header">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-        <div class="cat-sheet-name" id="allBooksTitle"></div>
-        <div style="display:flex;gap:6px;" id="allBooksSortBtns"></div>
-      </div>
+      <div class="cat-sheet-name" id="allBooksTitle" style="margin-bottom:10px;"></div>
+      <div style="display:flex;gap:6px;margin-bottom:4px;" id="allBooksSortBtns"></div>
       <div class="cat-sheet-desc">지금까지 읽은 모든 책이에요</div>
     </div>
     <div class="cat-sheet-divider"></div>
@@ -509,14 +505,14 @@ function renderAllBooksSheet() {
   document.getElementById('allBooksTitle').innerHTML = `📖 전체 책 <span class="cat-count-badge">${books.length}권</span>`;
 
   // 정렬 버튼
-  const sortBtns = [{ key:'recent', label:'등록순' }, ...CATEGORIES.map(c=>({ key:c.key, label:c.label }))];
+  const sortBtns = [{ key:'recent', label:'등록순' }, { key:'cat', label:'분야순' }];
   document.getElementById('allBooksSortBtns').innerHTML = sortBtns.map(s =>
     `<button class="sort-btn ${allBooksSortMode===s.key?'active':''}" onclick="setAllBooksSort('${s.key}')">${s.label}</button>`
   ).join('');
 
-  let sorted = allBooksSortMode === 'recent'
-    ? [...books].reverse()
-    : books.filter(b => b.cat === allBooksSortMode).reverse();
+  let sorted = allBooksSortMode === 'cat'
+    ? [...books].sort((a,b) => CATEGORIES.findIndex(c=>c.key===a.cat) - CATEGORIES.findIndex(c=>c.key===b.cat))
+    : [...books].reverse();
 
   const listEl = document.getElementById('allBooksList');
   if (!sorted.length) {
@@ -599,14 +595,14 @@ function openAllWishSheet() {
 function renderAllWishSheet() {
   document.getElementById('allWishTitle').innerHTML = `🔖 읽고 싶은 책 <span class="cat-count-badge">${wishlist.length}권</span>`;
 
-  const sortBtns = [{ key:'recent', label:'등록순' }, ...CATEGORIES.map(c=>({ key:c.key, label:c.label }))];
+  const sortBtns = [{ key:'recent', label:'등록순' }, { key:'cat', label:'분야순' }];
   document.getElementById('allWishSortBtns').innerHTML = sortBtns.map(s =>
     `<button class="sort-btn ${allWishSortMode===s.key?'active':''}" onclick="setAllWishSort('${s.key}')">${s.label}</button>`
   ).join('');
 
-  const sorted = allWishSortMode === 'recent'
-    ? [...wishlist].reverse()
-    : wishlist.filter(w => w.cat === allWishSortMode).reverse();
+  const sorted = allWishSortMode === 'cat'
+    ? [...wishlist].sort((a,b) => CATEGORIES.findIndex(c=>c.key===a.cat) - CATEGORIES.findIndex(c=>c.key===b.cat))
+    : [...wishlist].reverse();
 
   const listEl = document.getElementById('allWishList');
   if (!sorted.length) {
@@ -802,7 +798,7 @@ async function deleteWish(id) {
 
 function renderWishCats() {
   const badge = document.getElementById('wishTotalBadge');
-  if (badge) badge.textContent = wishlist.length + '권';
+  if (badge) badge.textContent = wishlist.length + '권 ›';
   const el = document.getElementById('wishCatList');
   el.innerHTML = CATEGORIES.map(c => {
     const count = wishlist.filter(w => w.cat === c.key).length;
@@ -983,7 +979,7 @@ function getCounts() {
 function render() {
   const counts = getCounts();
   const reviews = loadReviews();
-  document.getElementById('totalBadge').textContent = books.length + '권';
+  document.getElementById('totalBadge').textContent = books.length + '권 ›';
   const max = Math.max(...Object.values(counts), 1);
 
   document.getElementById('statsList').innerHTML = CATEGORIES.map(c => `
