@@ -187,6 +187,10 @@
   .btn-spin { flex:1; padding:12px; background:linear-gradient(135deg,#6c63ff,#a855f7); border:none; border-radius:10px; color:#fff; font-size:0.95rem; font-weight:600; cursor:pointer; font-family:inherit; transition:opacity 0.2s; }
   .btn-spin:disabled { opacity:0.5; }
   .btn-roulette-close { padding:12px 16px; background:#2a2a38; border:none; border-radius:10px; color:#aaa; font-size:0.9rem; cursor:pointer; font-family:inherit; }
+
+  /* 정렬 버튼 */
+  .sort-btn { padding:4px 10px; border-radius:20px; border:1px solid #2a2a38; background:none; color:#666; font-size:0.72rem; cursor:pointer; font-family:inherit; transition:all 0.15s; white-space:nowrap; }
+  .sort-btn.active { background:#6c63ff; border-color:#6c63ff; color:#fff; }
   .toast { position:fixed; bottom:32px; left:50%; transform:translateX(-50%) translateY(20px); background:#2a2a38; color:#e8e8f0; padding:10px 20px; border-radius:20px; font-size:0.85rem; opacity:0; transition:all 0.3s; pointer-events:none; white-space:nowrap; z-index:999; }
   .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 </style>
@@ -236,17 +240,12 @@
   </div>
 
   <div class="card">
-    <h2>📊 분야별 현황 <span class="total-badge" id="totalBadge">0권</span></h2>
+    <h2>📊 분야별 현황 <span class="total-badge" id="totalBadge" onclick="openAllBooksSheet()" style="cursor:pointer;">0권</span></h2>
     <div id="statsList"></div>
   </div>
 
   <div class="card">
-    <h2>📖 등록된 책</h2>
-    <div id="bookList"></div>
-  </div>
-
-  <div class="card">
-    <h2>🔖 읽을 책</h2>
+    <h2>🔖 읽고 싶은 책 <span class="total-badge" id="wishTotalBadge" onclick="openAllWishSheet()" style="cursor:pointer;">0권</span></h2>
     <div id="wishCatList"></div>
   </div>
 </div>
@@ -283,6 +282,39 @@
       <button class="btn-save-review" onclick="saveReview()">저장</button>
       <button class="btn-del-book" onclick="askDelete()">삭제</button>
     </div>
+  </div>
+</div>
+
+
+
+<!-- 전체 위시리스트 바텀시트 -->
+<div class="overlay" id="allWishOverlay">
+  <div class="bottom-sheet cat-sheet">
+    <div class="sheet-handle"></div>
+    <div class="cat-sheet-header">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div class="cat-sheet-name" id="allWishTitle"></div>
+        <div style="display:flex;gap:6px;" id="allWishSortBtns"></div>
+      </div>
+    </div>
+    <div class="cat-sheet-divider"></div>
+    <div class="cat-book-list" id="allWishList"></div>
+  </div>
+</div>
+
+<!-- 전체 책 바텀시트 -->
+<div class="overlay" id="allBooksOverlay">
+  <div class="bottom-sheet cat-sheet">
+    <div class="sheet-handle"></div>
+    <div class="cat-sheet-header">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div class="cat-sheet-name" id="allBooksTitle"></div>
+        <div style="display:flex;gap:6px;" id="allBooksSortBtns"></div>
+      </div>
+      <div class="cat-sheet-desc">지금까지 읽은 모든 책이에요</div>
+    </div>
+    <div class="cat-sheet-divider"></div>
+    <div class="cat-book-list" id="allBooksList"></div>
   </div>
 </div>
 
@@ -462,6 +494,66 @@ async function doDelete() {
   } catch(e) { showToast('삭제 실패. 다시 시도해주세요.'); }
 }
 
+
+// ── 전체 책 바텀시트 ──
+let allBooksSortMode = 'recent'; // 'recent' | 분야 key
+
+function openAllBooksSheet() {
+  allBooksSortMode = 'recent';
+  renderAllBooksSheet();
+  document.getElementById('allBooksOverlay').classList.add('show');
+}
+
+function renderAllBooksSheet() {
+  const reviews = loadReviews();
+  document.getElementById('allBooksTitle').innerHTML = `📖 전체 책 <span class="cat-count-badge">${books.length}권</span>`;
+
+  // 정렬 버튼
+  const sortBtns = [{ key:'recent', label:'등록순' }, ...CATEGORIES.map(c=>({ key:c.key, label:c.label }))];
+  document.getElementById('allBooksSortBtns').innerHTML = sortBtns.map(s =>
+    `<button class="sort-btn ${allBooksSortMode===s.key?'active':''}" onclick="setAllBooksSort('${s.key}')">${s.label}</button>`
+  ).join('');
+
+  let sorted = allBooksSortMode === 'recent'
+    ? [...books].reverse()
+    : books.filter(b => b.cat === allBooksSortMode).reverse();
+
+  const listEl = document.getElementById('allBooksList');
+  if (!sorted.length) {
+    listEl.innerHTML = '<p class="cat-empty">해당 분야의 책이 없어요</p>';
+  } else {
+    listEl.innerHTML = sorted.map(b => {
+      const cat = CATEGORIES.find(c => c.key === b.cat);
+      const rv = reviews[b.id] || {};
+      const rating = rv.rating || 0;
+      return `<div class="cat-book-item" onclick="closeAllBooksSheet();setTimeout(()=>openSheet(${b.id}),200)">
+        <div style="flex:1;min-width:0;">
+          <div class="cat-book-name">${b.title}</div>
+          <div style="display:flex;gap:8px;margin-top:3px;align-items:center;flex-wrap:wrap;">
+            ${cat?`<span class="cat-book-info">${cat.label}</span>`:''}
+            ${b.date?`<span class="cat-book-info">${formatDate(b.date)}</span>`:''}
+            ${rating>0?`<span class="cat-book-stars">${'⭐'.repeat(rating)}</span>`:''}
+          </div>
+        </div>
+        <span style="color:#6c63ff;font-size:1rem;font-weight:600;">›</span>
+      </div>`;
+    }).join('');
+  }
+}
+
+function setAllBooksSort(key) {
+  allBooksSortMode = key;
+  renderAllBooksSheet();
+}
+
+function closeAllBooksSheet() {
+  document.getElementById('allBooksOverlay').classList.remove('show');
+}
+
+document.getElementById('allBooksOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeAllBooksSheet();
+});
+
 // ── 카테고리 바텀시트 ──
 function openCatSheet(catKey) {
   const cat = CATEGORIES.find(c => c.key === catKey);
@@ -493,6 +585,61 @@ function openCatSheet(catKey) {
 }
 function closeCatSheet() { document.getElementById('catOverlay').classList.remove('show'); }
 document.getElementById('catOverlay').addEventListener('click', function(e) { if(e.target===this) closeCatSheet(); });
+
+
+// ── 전체 위시리스트 바텀시트 ──
+let allWishSortMode = 'recent';
+
+function openAllWishSheet() {
+  allWishSortMode = 'recent';
+  renderAllWishSheet();
+  document.getElementById('allWishOverlay').classList.add('show');
+}
+
+function renderAllWishSheet() {
+  document.getElementById('allWishTitle').innerHTML = `🔖 읽고 싶은 책 <span class="cat-count-badge">${wishlist.length}권</span>`;
+
+  const sortBtns = [{ key:'recent', label:'등록순' }, ...CATEGORIES.map(c=>({ key:c.key, label:c.label }))];
+  document.getElementById('allWishSortBtns').innerHTML = sortBtns.map(s =>
+    `<button class="sort-btn ${allWishSortMode===s.key?'active':''}" onclick="setAllWishSort('${s.key}')">${s.label}</button>`
+  ).join('');
+
+  const sorted = allWishSortMode === 'recent'
+    ? [...wishlist].reverse()
+    : wishlist.filter(w => w.cat === allWishSortMode).reverse();
+
+  const listEl = document.getElementById('allWishList');
+  if (!sorted.length) {
+    listEl.innerHTML = '<p class="cat-empty">해당 분야의 책이 없어요</p>';
+  } else {
+    listEl.innerHTML = sorted.map(w => {
+      const cat = CATEGORIES.find(c => c.key === w.cat);
+      return `<div class="cat-book-item">
+        <div style="flex:1;min-width:0;">
+          <div class="cat-book-name">${w.title}</div>
+          <div style="display:flex;gap:8px;margin-top:3px;align-items:center;flex-wrap:wrap;">
+            ${cat?`<span class="cat-book-info">${cat.label}</span>`:''}
+            ${w.author?`<span class="cat-book-info">✍️ ${w.author}</span>`:''}
+          </div>
+          ${w.reason?`<div class="cat-book-info" style="margin-top:3px;font-style:italic;">"${w.reason}"</div>`:''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+}
+
+function setAllWishSort(key) {
+  allWishSortMode = key;
+  renderAllWishSheet();
+}
+
+function closeAllWishSheet() {
+  document.getElementById('allWishOverlay').classList.remove('show');
+}
+
+document.getElementById('allWishOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeAllWishSheet();
+});
 
 // ── 위시리스트 바텀시트 ──
 let wishEditMode = false;
@@ -654,6 +801,8 @@ async function deleteWish(id) {
 }
 
 function renderWishCats() {
+  const badge = document.getElementById('wishTotalBadge');
+  if (badge) badge.textContent = wishlist.length + '권';
   const el = document.getElementById('wishCatList');
   el.innerHTML = CATEGORIES.map(c => {
     const count = wishlist.filter(w => w.cat === c.key).length;
@@ -744,31 +893,34 @@ function spinRoulette() {
 
   const n = CATEGORIES.length;
   const slice = (Math.PI * 2) / n;
-  // 랜덤 당첨 조각
   const winIndex = Math.floor(Math.random() * n);
-  // 최소 5바퀴 + 당첨 위치
-  const totalRotation = Math.PI * 2 * (5 + Math.random() * 3);
-  // 바늘은 위(−π/2), 당첨 조각 중앙이 바늘 아래로 오게
-  const targetAngle = -Math.PI/2 - (winIndex * slice + slice/2);
-  const finalAngle = currentAngle - (currentAngle % (Math.PI*2)) + totalRotation + targetAngle;
+  // 당첨 조각 중앙이 바늘(12시, -π/2)에 정확히 오도록
+  // finalAngle + winIndex*slice + slice/2 ≡ -π/2 (mod 2π)
+  const needed = -Math.PI/2 - winIndex * slice - slice/2;
+  const extraSpins = Math.PI * 2 * (6 + Math.floor(Math.random() * 3));
+  const finalAngle = needed + extraSpins;
 
   const duration = 4000;
   const start = performance.now();
   const startAngle = currentAngle;
+  const endAngle = startAngle + (finalAngle - (startAngle % (Math.PI*2)));
 
   function animate(now) {
     const elapsed = now - start;
     const progress = Math.min(elapsed / duration, 1);
-    // easeOut
     const ease = 1 - Math.pow(1 - progress, 4);
-    currentAngle = startAngle + (finalAngle - startAngle) * ease;
+    currentAngle = startAngle + (endAngle - startAngle) * ease;
     drawWheel(currentAngle);
     if (progress < 1) {
       requestAnimationFrame(animate);
     } else {
-      currentAngle = finalAngle;
+      currentAngle = endAngle;
       isSpinning = false;
       document.getElementById('btnSpin').disabled = false;
+      // 바늘(-π/2) 위치의 조각 인덱스 계산
+      const normalized = ((currentAngle % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
+      const needleAngle = (Math.PI*2 - (-Math.PI/2 - normalized) % (Math.PI*2) + Math.PI*2) % (Math.PI*2);
+      const result = Math.floor(((Math.PI/2 - (currentAngle % (Math.PI*2)) % (Math.PI*2) + Math.PI*4) % (Math.PI*2)) / (Math.PI*2/n)) % n;
       const cat = CATEGORIES[winIndex];
       document.getElementById('rouletteResult').textContent = `${cat.label} 분야를 읽어봐요!`;
     }
@@ -841,32 +993,6 @@ function render() {
       <span class="stat-count">${counts[c.key]}</span>
       <span style="color:#6c63ff;font-size:1rem;font-weight:600;margin-left:4px;flex-shrink:0;">›</span>
     </div>`).join('');
-
-  const listEl = document.getElementById('bookList');
-  if (!books.length) {
-    listEl.innerHTML = '<p class="empty">아직 등록된 책이 없어요</p>';
-  } else {
-    listEl.innerHTML = [...books].reverse().map(b => {
-      const cat = CATEGORIES.find(c => c.key === b.cat);
-      const rv = reviews[b.id] || {};
-      const rating = rv.rating || 0;
-      const reviewText = rv.text || '';
-      return `<div class="book-item">
-        <div class="book-row" onclick="openSheet(${b.id})">
-          <div class="book-info">
-            <div class="book-title">${b.title}</div>
-            <div class="book-meta">
-              <span class="book-cat">${cat?cat.label:b.cat}</span>
-              ${b.date?`<span class="book-date">· ${formatDate(b.date)}</span>`:''}
-            </div>
-            ${rating>0?`<div class="book-stars">${'⭐'.repeat(rating)}${'☆'.repeat(5-rating)}</div>`:''}
-            ${reviewText?`<div class="book-review">"${reviewText}"</div>`:''}
-          </div>
-          <span style="color:#6c63ff;font-size:1rem;font-weight:600;flex-shrink:0;">›</span>
-        </div>
-      </div>`;
-    }).join('');
-  }
 
   renderWishCats();
   drawRadar(counts);
