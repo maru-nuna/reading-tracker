@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="학습지도">
-<title>✏️ 나의 학습 지도</title>
+<title>🌍 나의 학습 지도</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   body { font-family: 'Apple SD Gothic Neo','Noto Sans KR',sans-serif; background:#0f0f14; color:#e8e8f0; min-height:100vh; padding:48px 16px 40px; }
@@ -129,16 +129,24 @@
   .btn-wish-add { padding:9px 14px; background:linear-gradient(135deg,#6c63ff,#a855f7); border:none; border-radius:8px; color:#fff; font-size:0.86rem; font-weight:600; cursor:pointer; font-family:inherit; white-space:nowrap; }
   .wish-divider { height:1px; background:#2a2a38; margin-bottom:12px; flex-shrink:0; }
   .wish-list { overflow-y:auto; flex:1; }
-  .wish-item { padding:12px 0; border-bottom:1px solid #2a2a38; }
+  .wish-item { display:flex; align-items:flex-start; gap:10px; padding:12px 0; border-bottom:1px solid #2a2a38; }
   .wish-item:last-child { border-bottom:none; }
+  .wish-item-check { flex-shrink:0; width:20px; height:20px; margin-top:2px; accent-color:#a855f7; cursor:pointer; display:none; }
+  .wish-edit-mode .wish-item-check { display:block; }
+  .wish-item-body { flex:1; min-width:0; }
   .wish-item-title { font-size:0.88rem; font-weight:600; margin-bottom:3px; }
-  .wish-item-sub { font-size:0.75rem; color:#666; margin-bottom:6px; }
+  .wish-item-sub { font-size:0.75rem; color:#666; margin-bottom:4px; }
   .wish-item-reason { font-size:0.78rem; color:#888; font-style:italic; }
-  .wish-item-actions { display:flex; gap:6px; margin-top:8px; }
-  .wish-btn { background:none; border:1px solid #2a2a38; cursor:pointer; padding:5px 10px; font-size:0.78rem; font-family:inherit; border-radius:6px; transition:all 0.15s; }
-  .wish-btn-edit { color:#6c63ff; border-color:#6c63ff; }
-  .wish-btn-del { color:#555; }
-  .wish-btn-del:active { color:#ff6b6b; border-color:#ff6b6b; }
+  .wish-item-pencil { flex-shrink:0; background:none; border:none; cursor:pointer; color:#555; font-size:1rem; padding:4px; display:none; transition:color 0.15s; }
+  .wish-item-pencil:active { color:#6c63ff; }
+  .wish-edit-mode .wish-item-pencil { display:block; }
+  .wish-edit-toolbar { display:none; align-items:center; justify-content:space-between; margin-bottom:12px; flex-shrink:0; }
+  .wish-edit-mode .wish-edit-toolbar { display:flex; }
+  .wish-toolbar-left { display:flex; align-items:center; gap:8px; }
+  .wish-select-all { display:flex; align-items:center; gap:6px; font-size:0.8rem; color:#aaa; cursor:pointer; }
+  .wish-select-all input { accent-color:#a855f7; width:16px; height:16px; }
+  .btn-wish-del-selected { padding:6px 12px; background:#ff6b6b; border:none; border-radius:7px; color:#fff; font-size:0.78rem; font-weight:600; cursor:pointer; font-family:inherit; }
+  .btn-wish-del-selected:disabled { opacity:0.4; }
   .wish-edit-box { background:#0f0f14; border:1px solid #2a2a38; border-radius:10px; padding:10px; margin-top:8px; }
   .wish-edit-input { width:100%; background:#1a1a24; border:1px solid #2a2a38; border-radius:7px; padding:8px 10px; color:#e8e8f0; font-size:0.85rem; font-family:inherit; outline:none; margin-bottom:7px; }
   .wish-edit-input:focus { border-color:#6c63ff; }
@@ -159,18 +167,42 @@
   .btn-cancel { background:#2a2a38; color:#aaa; }
   .btn-confirm { background:#ff6b6b; color:#fff; }
 
+
+  /* 룰렛 힌트 */
+  .roulette-hint { display:flex; align-items:center; gap:8px; margin-bottom:10px; cursor:pointer; width:fit-content; }
+  .roulette-hint-icon { width:22px; height:22px; border-radius:50%; border:1.5px solid #6c63ff; display:flex; align-items:center; justify-content:center; color:#6c63ff; font-size:0.78rem; font-weight:700; flex-shrink:0; }
+  .roulette-hint-text { font-size:0.8rem; color:#6c63ff; text-decoration:underline; text-underline-offset:2px; }
+
+  /* 룰렛 오버레이 */
+  .roulette-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:300; align-items:center; justify-content:center; }
+  .roulette-overlay.show { display:flex; }
+  .roulette-box { background:#1a1a24; border:1px solid #2a2a38; border-radius:24px; padding:28px 24px 24px; width:320px; text-align:center; }
+  .roulette-title { font-size:1rem; font-weight:700; margin-bottom:4px; }
+  .roulette-sub { font-size:0.78rem; color:#666; margin-bottom:24px; }
+  .roulette-wheel-wrap { position:relative; margin:0 auto 24px; width:220px; height:220px; }
+  .roulette-canvas { border-radius:50%; }
+  .roulette-needle { position:absolute; top:-10px; left:50%; transform:translateX(-50%); font-size:1.4rem; line-height:1; z-index:10; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+  .roulette-result { font-size:1.1rem; font-weight:700; color:#e8e8f0; min-height:28px; margin-bottom:20px; }
+  .roulette-btns { display:flex; gap:10px; }
+  .btn-spin { flex:1; padding:12px; background:linear-gradient(135deg,#6c63ff,#a855f7); border:none; border-radius:10px; color:#fff; font-size:0.95rem; font-weight:600; cursor:pointer; font-family:inherit; transition:opacity 0.2s; }
+  .btn-spin:disabled { opacity:0.5; }
+  .btn-roulette-close { padding:12px 16px; background:#2a2a38; border:none; border-radius:10px; color:#aaa; font-size:0.9rem; cursor:pointer; font-family:inherit; }
   .toast { position:fixed; bottom:32px; left:50%; transform:translateX(-50%) translateY(20px); background:#2a2a38; color:#e8e8f0; padding:10px 20px; border-radius:20px; font-size:0.85rem; opacity:0; transition:all 0.3s; pointer-events:none; white-space:nowrap; z-index:999; }
   .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
 <div class="container">
-  <h1>✏️ 나의 학습 지도</h1>
-  <p class="subtitle">균형잡힌 학습을 위한 시각화</p>
+  <h1>🌍 나의 학습 지도</h1>
+  <p class="subtitle">나는 균형잡힌 학습을 하고 있나요?</p>
   <div id="syncStatus" class="sync-status"></div>
 
   <div class="chart-wrap"><canvas id="radar" width="340" height="340"></canvas></div>
 
+  <div class="roulette-hint" onclick="openRoulette()">
+    <div class="roulette-hint-icon">!</div>
+    <span class="roulette-hint-text">무슨 책을 읽을지 고민 된다면?</span>
+  </div>
   <div class="card">
     <h2>✏️ 책 등록</h2>
     <div class="field">
@@ -219,6 +251,24 @@
   </div>
 </div>
 
+
+<!-- 룰렛 팝업 -->
+<div class="roulette-overlay" id="rouletteOverlay">
+  <div class="roulette-box">
+    <div class="roulette-title">🎯 이번 분야는?</div>
+    <div class="roulette-sub">운명처럼 다가온 이번 분야는?</div>
+    <div class="roulette-wheel-wrap">
+      <div class="roulette-needle">▼</div>
+      <canvas class="roulette-canvas" id="rouletteCanvas" width="220" height="220"></canvas>
+    </div>
+    <div class="roulette-result" id="rouletteResult"></div>
+    <div class="roulette-btns">
+      <button class="btn-spin" id="btnSpin" onclick="spinRoulette()">🎲 돌리기</button>
+      <button class="btn-roulette-close" onclick="closeRoulette()">닫기</button>
+    </div>
+  </div>
+</div>
+
 <!-- 책 상세 바텀시트 -->
 <div class="overlay" id="sheetOverlay">
   <div class="bottom-sheet">
@@ -253,12 +303,14 @@
 <div class="overlay" id="wishOverlay">
   <div class="bottom-sheet wish-sheet">
     <div class="sheet-handle"></div>
-    <div class="wish-sheet-name" id="wishSheetName"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div class="wish-sheet-name" id="wishSheetName"></div>
+      <button id="wishEditBtn" onclick="toggleWishEditMode()" style="background:none;border:1px solid #2a2a38;border-radius:8px;color:#aaa;font-size:0.78rem;padding:5px 10px;cursor:pointer;font-family:inherit;">편집</button>
+    </div>
     <div class="wish-sheet-desc" id="wishSheetDesc"></div>
-    <div class="wish-add-box">
+    <div class="wish-add-box" id="wishAddBox">
       <div class="wish-add-row">
         <input class="wish-input" id="wishInputTitle" placeholder="읽고 싶은 책 제목 (필수)">
-        <button class="btn-wish-add" onclick="addWish()">+ 추가</button>
       </div>
       <div class="wish-add-row">
         <input class="wish-input" id="wishInputAuthor" placeholder="저자 (선택)">
@@ -266,8 +318,18 @@
       <div class="wish-add-row">
         <input class="wish-input" id="wishInputReason" placeholder="읽고 싶은 이유 (필수)">
       </div>
+      <div class="wish-add-row">
+        <button class="btn-wish-add" onclick="addWish()" style="width:100%;">+ 추가</button>
+      </div>
     </div>
     <div class="wish-divider"></div>
+    <div class="wish-edit-toolbar" id="wishEditToolbar">
+      <label class="wish-select-all">
+        <input type="checkbox" id="wishSelectAll" onchange="toggleSelectAll(this.checked)">
+        전체 선택
+      </label>
+      <button class="btn-wish-del-selected" id="btnDelSelected" onclick="deleteSelectedWishes()" disabled>삭제</button>
+    </div>
     <div class="wish-list" id="wishList"></div>
   </div>
 </div>
@@ -433,20 +495,80 @@ function closeCatSheet() { document.getElementById('catOverlay').classList.remov
 document.getElementById('catOverlay').addEventListener('click', function(e) { if(e.target===this) closeCatSheet(); });
 
 // ── 위시리스트 바텀시트 ──
+let wishEditMode = false;
+
 function openWishSheet(catKey) {
   wishCatKey = catKey;
   editingWishId = null;
+  wishEditMode = false;
   const cat = CATEGORIES.find(c => c.key === catKey);
   document.getElementById('wishSheetName').textContent = cat.label;
   document.getElementById('wishSheetDesc').textContent = cat.desc;
   document.getElementById('wishInputTitle').value = '';
   document.getElementById('wishInputAuthor').value = '';
   document.getElementById('wishInputReason').value = '';
+  document.getElementById('wishEditBtn').textContent = '편집';
+  document.getElementById('wishList').classList.remove('wish-edit-mode');
+  document.getElementById('wishAddBox').style.display = '';
   renderWishList();
   document.getElementById('wishOverlay').classList.add('show');
 }
-function closeWishSheet() { document.getElementById('wishOverlay').classList.remove('show'); wishCatKey = null; editingWishId = null; }
+
+function closeWishSheet() {
+  document.getElementById('wishOverlay').classList.remove('show');
+  wishCatKey = null; editingWishId = null; wishEditMode = false;
+}
 document.getElementById('wishOverlay').addEventListener('click', function(e) { if(e.target===this) closeWishSheet(); });
+
+function toggleWishEditMode() {
+  wishEditMode = !wishEditMode;
+  editingWishId = null;
+  const listEl = document.getElementById('wishList');
+  const addBox = document.getElementById('wishAddBox');
+  const btn = document.getElementById('wishEditBtn');
+  if (wishEditMode) {
+    listEl.classList.add('wish-edit-mode');
+    addBox.style.display = 'none';
+    btn.textContent = '완료';
+    btn.style.color = '#a855f7';
+    btn.style.borderColor = '#a855f7';
+  } else {
+    listEl.classList.remove('wish-edit-mode');
+    addBox.style.display = '';
+    btn.textContent = '편집';
+    btn.style.color = '';
+    btn.style.borderColor = '';
+    // 체크박스 초기화
+    document.getElementById('wishSelectAll').checked = false;
+    document.getElementById('btnDelSelected').disabled = true;
+  }
+  renderWishList();
+}
+
+function toggleSelectAll(checked) {
+  document.querySelectorAll('.wish-item-check').forEach(cb => cb.checked = checked);
+  updateDelBtn();
+}
+
+function updateDelBtn() {
+  const any = document.querySelectorAll('.wish-item-check:checked').length > 0;
+  document.getElementById('btnDelSelected').disabled = !any;
+}
+
+async function deleteSelectedWishes() {
+  const checked = [...document.querySelectorAll('.wish-item-check:checked')].map(cb => cb.dataset.id);
+  if (!checked.length) return;
+  try {
+    for (const id of checked) {
+      await fetch(API, { method:'POST', body:JSON.stringify({ action:'wish_delete', id }) });
+      wishlist = wishlist.filter(w => w.id !== id);
+    }
+    document.getElementById('wishSelectAll').checked = false;
+    document.getElementById('btnDelSelected').disabled = true;
+    renderWishList(); renderWishCats();
+    showToast(`🗑 ${checked.length}권 삭제됐어요`);
+  } catch(e) { showToast('삭제 실패. 다시 시도해주세요.'); }
+}
 
 function renderWishList() {
   const catWishes = wishlist.filter(w => w.cat === wishCatKey);
@@ -454,7 +576,7 @@ function renderWishList() {
   if (!catWishes.length) { el.innerHTML = '<p class="wish-empty">아직 추가된 책이 없어요</p>'; return; }
   el.innerHTML = catWishes.map(w => {
     if (editingWishId === w.id) {
-      return `<div class="wish-item">
+      return `<div class="wish-item" style="display:block;">
         <div class="wish-edit-box">
           <input class="wish-edit-input" id="edit-title-${w.id}" value="${w.title.replace(/"/g,'&quot;')}" placeholder="책 제목 (필수)">
           <input class="wish-edit-input" id="edit-author-${w.id}" value="${(w.author||'').replace(/"/g,'&quot;')}" placeholder="저자 (선택)">
@@ -467,13 +589,13 @@ function renderWishList() {
       </div>`;
     }
     return `<div class="wish-item">
-      <div class="wish-item-title">${w.title}</div>
-      ${w.author ? `<div class="wish-item-sub">✍️ ${w.author}</div>` : ''}
-      ${w.reason ? `<div class="wish-item-reason">"${w.reason}"</div>` : ''}
-      <div class="wish-item-actions">
-        <button class="wish-btn wish-btn-edit" onclick="startEditWish('${w.id}')">수정</button>
-        <button class="wish-btn wish-btn-del" onclick="deleteWish('${w.id}')">삭제</button>
+      <input type="checkbox" class="wish-item-check" data-id="${w.id}" onchange="updateDelBtn()">
+      <div class="wish-item-body">
+        <div class="wish-item-title">${w.title}</div>
+        ${w.author ? `<div class="wish-item-sub">✍️ ${w.author}</div>` : ''}
+        ${w.reason ? `<div class="wish-item-reason">"${w.reason}"</div>` : ''}
       </div>
+      <button class="wish-item-pencil" onclick="startEditWish('${w.id}')">✏️</button>
     </div>`;
   }).join('');
 }
@@ -543,6 +665,115 @@ function renderWishCats() {
       </div>
     </div>`;
   }).join('');
+}
+
+
+// ── 룰렛 ──
+const ROULETTE_COLORS = [
+  '#6c63ff','#a855f7','#7c3aed','#9333ea',
+  '#8b5cf6','#c084fc','#7e22ce','#a78bfa'
+];
+
+let isSpinning = false;
+let currentAngle = 0;
+
+function openRoulette() {
+  document.getElementById('rouletteResult').textContent = '';
+  document.getElementById('btnSpin').disabled = false;
+  document.getElementById('rouletteOverlay').classList.add('show');
+  drawWheel(currentAngle);
+}
+
+function closeRoulette() {
+  document.getElementById('rouletteOverlay').classList.remove('show');
+}
+
+document.getElementById('rouletteOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeRoulette();
+});
+
+function drawWheel(rotation) {
+  const canvas = document.getElementById('rouletteCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2, r = cx - 4;
+  const n = CATEGORIES.length;
+  const slice = (Math.PI * 2) / n;
+  ctx.clearRect(0, 0, W, H);
+
+  CATEGORIES.forEach((cat, i) => {
+    const start = rotation + i * slice;
+    const end = start + slice;
+    // 조각
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, start, end);
+    ctx.closePath();
+    ctx.fillStyle = ROULETTE_COLORS[i % ROULETTE_COLORS.length];
+    ctx.fill();
+    ctx.strokeStyle = '#0f0f14';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // 텍스트
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(start + slice / 2);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 11px Apple SD Gothic Neo, sans-serif';
+    ctx.fillText(cat.label, r - 8, 4);
+    ctx.restore();
+  });
+
+  // 중앙 원
+  ctx.beginPath();
+  ctx.arc(cx, cy, 18, 0, Math.PI * 2);
+  ctx.fillStyle = '#0f0f14';
+  ctx.fill();
+  ctx.strokeStyle = '#2a2a38';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+
+function spinRoulette() {
+  if (isSpinning) return;
+  isSpinning = true;
+  document.getElementById('btnSpin').disabled = true;
+  document.getElementById('rouletteResult').textContent = '';
+
+  const n = CATEGORIES.length;
+  const slice = (Math.PI * 2) / n;
+  // 랜덤 당첨 조각
+  const winIndex = Math.floor(Math.random() * n);
+  // 최소 5바퀴 + 당첨 위치
+  const totalRotation = Math.PI * 2 * (5 + Math.random() * 3);
+  // 바늘은 위(−π/2), 당첨 조각 중앙이 바늘 아래로 오게
+  const targetAngle = -Math.PI/2 - (winIndex * slice + slice/2);
+  const finalAngle = currentAngle - (currentAngle % (Math.PI*2)) + totalRotation + targetAngle;
+
+  const duration = 4000;
+  const start = performance.now();
+  const startAngle = currentAngle;
+
+  function animate(now) {
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    // easeOut
+    const ease = 1 - Math.pow(1 - progress, 4);
+    currentAngle = startAngle + (finalAngle - startAngle) * ease;
+    drawWheel(currentAngle);
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      currentAngle = finalAngle;
+      isSpinning = false;
+      document.getElementById('btnSpin').disabled = false;
+      const cat = CATEGORIES[winIndex];
+      document.getElementById('rouletteResult').textContent = `${cat.label} 분야를 읽어봐요!`;
+    }
+  }
+  requestAnimationFrame(animate);
 }
 
 // ── 데이터 로드 ──
