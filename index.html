@@ -280,7 +280,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const API = 'https://script.google.com/macros/s/AKfycbwqD33UA4PRCYk6aQ2QqbGENiXNBSjXCQ2in2jcCkI1Pejqaov-On6Nw9MZ-LqTVMUMtg/exec';
+const API = 'https://script.google.com/macros/s/AKfycbwmxzJYfQOUTkkO_b3JHSEK_EJI7yVALR5tZnj3ipP8eNvc5Rxvg86Pe6yEAkGoGTzf9A/exec';
 
 const CATEGORIES = [
   { key: '경제', label: '💰 경제', desc: '돈으로부터 자유로워지기 위한 구조를 배운다' },
@@ -405,9 +405,15 @@ async function doDelete() {
   closeSheet();
   try {
     await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'delete', id }) });
+    // 로컬에서 즉시 제거
     books = books.filter(b => String(b.id) !== String(id));
     render();
     showToast('🗑 삭제됐어요');
+    // 서버에서 다시 불러와서 완전히 동기화
+    const res = await fetch(API);
+    const data = await res.json();
+    books = Array.isArray(data) ? data : [];
+    render();
   } catch (e) {
     showToast('삭제 실패. 다시 시도해주세요.');
   }
