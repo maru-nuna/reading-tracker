@@ -90,9 +90,13 @@
   .sheet-book-title { font-size:1rem; font-weight:700; margin-bottom:4px; }
   .sheet-book-meta { font-size:0.78rem; color:#666; margin-bottom:18px; }
   .sheet-label { font-size:0.72rem; color:#666; margin-bottom:8px; }
-  .stars-input { display:flex; gap:8px; margin-bottom:16px; }
-  .star-btn { background:none; border:none; font-size:1.6rem; cursor:pointer; padding:2px; line-height:1; transition:transform 0.1s; }
-  .star-btn:active { transform:scale(1.2); }
+  .stars-input { display:flex; gap:4px; margin-bottom:16px; }
+  .star-wrap { position:relative; width:2rem; height:2rem; cursor:pointer; flex-shrink:0; }
+  .star-wrap .star-base { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:1.6rem; line-height:1; color:#3a3a50; user-select:none; }
+  .star-wrap .star-fill { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:1.6rem; line-height:1; color:#f5c518; overflow:hidden; width:0%; user-select:none; transition:width 0.1s; }
+  .star-wrap .star-half-l { position:absolute; left:0; top:0; width:50%; height:100%; z-index:2; }
+  .star-wrap .star-half-r { position:absolute; right:0; top:0; width:50%; height:100%; z-index:2; }
+  .star-wrap:active { transform:scale(1.15); }
   .review-input { width:100%; background:#0f0f14; border:1px solid #2a2a38; border-radius:8px; padding:10px 12px; color:#e8e8f0; font-size:0.88rem; font-family:inherit; outline:none; resize:none; transition:border-color 0.2s; }
   .review-input:focus { border-color:#6c63ff; }
   .review-input::placeholder { color:#555; }
@@ -238,13 +242,7 @@
     </div>
     <div class="field">
       <label>별점 <span style="color:#555;font-size:0.7rem;">(선택)</span></label>
-      <div class="stars-input" id="addStars" style="margin-bottom:0;">
-        <button class="star-btn" onclick="setAddStar(1)">☆</button>
-        <button class="star-btn" onclick="setAddStar(2)">☆</button>
-        <button class="star-btn" onclick="setAddStar(3)">☆</button>
-        <button class="star-btn" onclick="setAddStar(4)">☆</button>
-        <button class="star-btn" onclick="setAddStar(5)">☆</button>
-      </div>
+      <div class="stars-input" id="addStars" style="margin-bottom:0;"></div>
     </div>
     <div class="field">
       <label>한 줄 평 <span style="color:#555;font-size:0.7rem;">(선택)</span></label>
@@ -460,11 +458,19 @@ function openSheet(bookId) {
 function closeSheet() { document.getElementById('sheetOverlay').classList.remove('show'); sheetBookId = null; }
 document.getElementById('sheetOverlay').addEventListener('click', function(e) { if(e.target===this) closeSheet(); });
 
-function renderSheetStars(rating) {
-  document.getElementById('sheetStars').innerHTML = [1,2,3,4,5].map(i =>
-    `<button class="star-btn" onclick="setSheetStar(${i})">${i<=rating?'⭐':'☆'}</button>`
-  ).join('');
+function renderStarsTo(containerId, rating, onSet) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = [1,2,3,4,5].map(i => {
+    const fill = Math.min(Math.max(rating - (i-1), 0), 1) * 100;
+    return `<div class="star-wrap">
+      <span class="star-base">★</span>
+      <span class="star-fill" style="width:${fill}%">★</span>
+      <span class="star-half-l" onclick="${onSet}(${i-0.5})"></span>
+      <span class="star-half-r" onclick="${onSet}(${i})"></span>
+    </div>`;
+  }).join('');
 }
+function renderSheetStars(rating) { renderStarsTo('sheetStars', rating, 'setSheetStar'); }
 function setSheetStar(rating) {
   const reviews = loadReviews();
   if (!reviews[sheetBookId]) reviews[sheetBookId] = {};
@@ -542,7 +548,7 @@ function renderAllBooksSheet() {
           <div style="display:flex;gap:8px;margin-top:3px;align-items:center;flex-wrap:wrap;">
             ${cat?`<span class="cat-book-info">${cat.label}</span>`:''}
             ${b.date?`<span class="cat-book-info">${formatDate(b.date)}</span>`:''}
-            ${rating>0?`<span class="cat-book-stars">${'⭐'.repeat(rating)}</span>`:''}
+            ${rating>0?`<span class="cat-book-stars">${formatRating(rating)}</span>`:''}
           </div>
         </div>
         <span style="color:#6c63ff;font-size:1rem;font-weight:600;">›</span>
@@ -584,7 +590,7 @@ function openCatSheet(catKey) {
           <div class="cat-book-name">${b.title}</div>
           <div style="display:flex;gap:8px;margin-top:3px;align-items:center;">
             ${b.date?`<span class="cat-book-info">${formatDate(b.date)}</span>`:''}
-            ${rating>0?`<span class="cat-book-stars">${'⭐'.repeat(rating)}</span>`:''}
+            ${rating>0?`<span class="cat-book-stars">${formatRating(rating)}</span>`:''}
           </div>
         </div>
         <span style="color:#6c63ff;font-size:1rem;font-weight:600;">›</span>
@@ -955,13 +961,16 @@ async function loadBooks() {
   }
 }
 
-// ── 책 등록 폼 별점 ──
+function formatRating(rating) {
+  if (!rating) return '';
+  const full = Math.floor(rating);
+  const half = rating % 1 >= 0.5;
+  return '⭐'.repeat(full) + (half ? '✨' : '');
+}
 let addStarRating = 0;
 function setAddStar(rating) {
   addStarRating = rating;
-  document.getElementById('addStars').innerHTML = [1,2,3,4,5].map(i =>
-    `<button class="star-btn" onclick="setAddStar(${i})">${i<=rating?'⭐':'☆'}</button>`
-  ).join('');
+  renderStarsTo('addStars', rating, 'setAddStar');
 }
 
 // ── 책 등록 ──
@@ -994,8 +1003,7 @@ async function addBook() {
     titleEl.value = ''; catEl.value = ''; bookDateEl.value = '';
     catEl.classList.remove('has-value'); datePlaceholderEl.style.opacity='1'; bookDateEl.classList.remove('has-value');
     addStarRating = 0;
-    document.getElementById('addStars').innerHTML = [1,2,3,4,5].map(i =>
-      `<button class="star-btn" onclick="setAddStar(${i})">☆</button>`).join('');
+    renderStarsTo('addStars', 0, 'setAddStar');
     document.getElementById('addReview').value = '';
     render(); showToast('✅ 등록됐어요!');
   } catch(e) { showToast('저장 실패. 다시 시도해주세요.'); }
@@ -1061,6 +1069,7 @@ function drawRadar(counts) {
 
 document.getElementById('bookTitle').addEventListener('keydown', e => { if(e.key==='Enter') addBook(); });
 document.getElementById('wishInputTitle').addEventListener('keydown', e => { if(e.key==='Enter') addWish(); });
+renderStarsTo('addStars', 0, 'setAddStar');
 loadBooks();
 </script>
 </body>
