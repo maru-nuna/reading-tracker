@@ -236,6 +236,20 @@
         <span class="date-placeholder" id="datePlaceholder">날짜 선택</span>
       </div>
     </div>
+    <div class="field">
+      <label>별점 <span style="color:#555;font-size:0.7rem;">(선택)</span></label>
+      <div class="stars-input" id="addStars" style="margin-bottom:0;">
+        <button class="star-btn" onclick="setAddStar(1)">☆</button>
+        <button class="star-btn" onclick="setAddStar(2)">☆</button>
+        <button class="star-btn" onclick="setAddStar(3)">☆</button>
+        <button class="star-btn" onclick="setAddStar(4)">☆</button>
+        <button class="star-btn" onclick="setAddStar(5)">☆</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>한 줄 평 <span style="color:#555;font-size:0.7rem;">(선택)</span></label>
+      <textarea class="review-input" id="addReview" rows="2" placeholder="이 책에 대한 한 줄 평을 남겨보세요"></textarea>
+    </div>
     <button class="btn-add" id="addBtn" onclick="addBook()">+ 등록하기</button>
   </div>
 
@@ -941,6 +955,15 @@ async function loadBooks() {
   }
 }
 
+// ── 책 등록 폼 별점 ──
+let addStarRating = 0;
+function setAddStar(rating) {
+  addStarRating = rating;
+  document.getElementById('addStars').innerHTML = [1,2,3,4,5].map(i =>
+    `<button class="star-btn" onclick="setAddStar(${i})">${i<=rating?'⭐':'☆'}</button>`
+  ).join('');
+}
+
 // ── 책 등록 ──
 async function addBook() {
   const titleEl = document.getElementById('bookTitle');
@@ -960,8 +983,20 @@ async function addBook() {
   try {
     await fetch(API, { method:'POST', body:JSON.stringify({ action:'add', ...newBook }) });
     books.push(newBook);
+    // 별점/한줄평 저장
+    const reviewText = document.getElementById('addReview').value.trim();
+    if (addStarRating > 0 || reviewText) {
+      const reviews = loadReviews();
+      reviews[newBook.id] = { rating: addStarRating, text: reviewText };
+      saveReviews(reviews);
+    }
+    // 폼 초기화
     titleEl.value = ''; catEl.value = ''; bookDateEl.value = '';
     catEl.classList.remove('has-value'); datePlaceholderEl.style.opacity='1'; bookDateEl.classList.remove('has-value');
+    addStarRating = 0;
+    document.getElementById('addStars').innerHTML = [1,2,3,4,5].map(i =>
+      `<button class="star-btn" onclick="setAddStar(${i})">☆</button>`).join('');
+    document.getElementById('addReview').value = '';
     render(); showToast('✅ 등록됐어요!');
   } catch(e) { showToast('저장 실패. 다시 시도해주세요.'); }
   btn.disabled = false; btn.textContent = '+ 등록하기';
