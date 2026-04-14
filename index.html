@@ -90,13 +90,12 @@
   .sheet-book-title { font-size:1rem; font-weight:700; margin-bottom:4px; }
   .sheet-book-meta { font-size:0.78rem; color:#666; margin-bottom:18px; }
   .sheet-label { font-size:0.72rem; color:#666; margin-bottom:8px; }
-  .stars-input { display:flex; gap:4px; margin-bottom:16px; }
-  .star-wrap { position:relative; width:2rem; height:2rem; cursor:pointer; flex-shrink:0; }
-  .star-wrap .star-base { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:1.6rem; line-height:1; color:#3a3a50; user-select:none; }
-  .star-wrap .star-fill { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:1.6rem; line-height:1; color:#f5c518; overflow:hidden; width:0%; user-select:none; transition:width 0.1s; }
-  .star-wrap .star-half-l { position:absolute; left:0; top:0; width:50%; height:100%; z-index:2; }
-  .star-wrap .star-half-r { position:absolute; right:0; top:0; width:50%; height:100%; z-index:2; }
+  .stars-input { display:flex; gap:6px; margin-bottom:16px; }
+  .star-wrap { position:relative; width:2rem; height:2rem; cursor:pointer; flex-shrink:0; transition:transform 0.1s; }
   .star-wrap:active { transform:scale(1.15); }
+  .star-wrap svg { width:100%; height:100%; display:block; }
+  .star-half-l { position:absolute; left:0; top:0; width:50%; height:100%; z-index:2; }
+  .star-half-r { position:absolute; right:0; top:0; width:50%; height:100%; z-index:2; }
   .review-input { width:100%; background:#0f0f14; border:1px solid #2a2a38; border-radius:8px; padding:10px 12px; color:#e8e8f0; font-size:0.88rem; font-family:inherit; outline:none; resize:none; transition:border-color 0.2s; }
   .review-input:focus { border-color:#6c63ff; }
   .review-input::placeholder { color:#555; }
@@ -245,8 +244,8 @@
       <div class="stars-input" id="addStars" style="margin-bottom:0;"></div>
     </div>
     <div class="field">
-      <label>한 줄 평 <span style="color:#555;font-size:0.7rem;">(선택)</span></label>
-      <textarea class="review-input" id="addReview" rows="2" placeholder="이 책에 대한 한 줄 평을 남겨보세요"></textarea>
+      <label>내가 몰랐던 것 <span style="color:#555;font-size:0.7rem;">(선택)</span></label>
+      <textarea class="review-input" id="addReview" rows="2" placeholder="이 책을 읽고 알게된 내가 몰랐던 것"></textarea>
     </div>
     <button class="btn-add" id="addBtn" onclick="addBook()">+ 등록하기</button>
   </div>
@@ -257,7 +256,7 @@
   </div>
 
   <div class="card">
-    <h2>🔖 읽고 싶은 책 <span class="total-badge" id="wishTotalBadge" onclick="openAllWishSheet()" style="cursor:pointer;">0권 ›</span></h2>
+    <h2>🔖 읽고 싶은 책 <span class="total-badge" id="wishTotalBadge" onclick="openAllWishSheet()" style="cursor:pointer;">0권 ›</span> <button onclick="openAddWishSheet()" style="background:linear-gradient(135deg,#6c63ff,#a855f7);border:none;border-radius:20px;color:#fff;font-size:0.72rem;font-weight:600;padding:3px 10px;cursor:pointer;font-family:inherit;margin-left:4px;">+ 등록하기</button></h2>
     <div id="wishCatList"></div>
   </div>
 </div>
@@ -288,8 +287,8 @@
     <div class="sheet-book-meta" id="sheetMeta"></div>
     <div class="sheet-label">별점</div>
     <div class="stars-input" id="sheetStars"></div>
-    <div class="sheet-label">한 줄 평</div>
-    <textarea class="review-input" id="sheetReview" rows="2" placeholder="이 책에 대한 한 줄 평을 남겨보세요"></textarea>
+    <div class="sheet-label">내가 몰랐던 것</div>
+    <textarea class="review-input" id="sheetReview" rows="2" placeholder="이 책을 읽고 알게된 내가 몰랐던 것"></textarea>
     <div class="sheet-btns">
       <button class="btn-save-review" onclick="saveReview()">저장</button>
       <button class="btn-del-book" onclick="askDelete()">삭제</button>
@@ -339,6 +338,43 @@
   </div>
 </div>
 
+<!-- 위시 등록 전용 바텀시트 -->
+<div class="overlay" id="addWishOverlay">
+  <div class="bottom-sheet">
+    <div class="sheet-handle"></div>
+    <div style="font-size:1rem;font-weight:700;margin-bottom:16px;">읽고 싶은 책 등록</div>
+    <div class="wish-add-box" style="background:transparent;border:none;padding:0;">
+      <div class="wish-add-row">
+        <input class="wish-input" id="addWishInputTitle" placeholder="읽고 싶은 책 제목 (필수)" style="background:#0f0f14;">
+      </div>
+      <div class="wish-add-row">
+        <input class="wish-input" id="addWishInputAuthor" placeholder="저자 (선택)" style="background:#0f0f14;">
+      </div>
+      <div class="wish-add-row">
+        <div class="select-wrap" style="width:100%;">
+          <select id="addWishCat" onchange="this.classList.toggle('has-value',!!this.value)" style="width:100%;background:#0f0f14;border:1px solid #2a2a38;border-radius:8px;padding:11px 12px;font-size:0.9rem;font-family:inherit;outline:none;color:#555;-webkit-appearance:none;appearance:none;">
+            <option value="">분야 선택 (필수)</option>
+            <option value="경제">💰 경제</option>
+            <option value="육아">👶 육아</option>
+            <option value="철학">🧠 철학</option>
+            <option value="예술">🎨 예술</option>
+            <option value="역사">📜 역사</option>
+            <option value="문화">🌍 문화</option>
+            <option value="과학">🔬 과학</option>
+            <option value="심리">💖 심리</option>
+          </select>
+        </div>
+      </div>
+      <div class="wish-add-row">
+        <input class="wish-input" id="addWishInputReason" placeholder="읽고 싶은 이유 (필수)" style="background:#0f0f14;">
+      </div>
+      <div class="wish-add-row">
+        <button class="btn-add" onclick="addWishFromSheet()" style="margin:0;">+ 추가하기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 위시리스트 바텀시트 -->
 <div class="overlay" id="wishOverlay">
   <div class="bottom-sheet wish-sheet">
@@ -348,21 +384,7 @@
       <button id="wishEditBtn" onclick="toggleWishEditMode()" style="background:none;border:1px solid #2a2a38;border-radius:8px;color:#aaa;font-size:0.78rem;padding:5px 10px;cursor:pointer;font-family:inherit;">편집</button>
     </div>
     <div class="wish-sheet-desc" id="wishSheetDesc"></div>
-    <div class="wish-add-box" id="wishAddBox">
-      <div class="wish-add-row">
-        <input class="wish-input" id="wishInputTitle" placeholder="읽고 싶은 책 제목 (필수)">
-      </div>
-      <div class="wish-add-row">
-        <input class="wish-input" id="wishInputAuthor" placeholder="저자 (선택)">
-      </div>
-      <div class="wish-add-row">
-        <input class="wish-input" id="wishInputReason" placeholder="읽고 싶은 이유 (필수)">
-      </div>
-      <div class="wish-add-row">
-        <button class="btn-wish-add" onclick="addWish()" style="width:100%;">+ 추가</button>
-      </div>
-    </div>
-    <div class="wish-divider"></div>
+    <div class="wish-divider" style="margin-top:12px;"></div>
     <div class="wish-edit-toolbar" id="wishEditToolbar">
       <label class="wish-select-all">
         <input type="checkbox" id="wishSelectAll" onchange="toggleSelectAll(this.checked)">
@@ -458,13 +480,24 @@ function openSheet(bookId) {
 function closeSheet() { document.getElementById('sheetOverlay').classList.remove('show'); sheetBookId = null; }
 document.getElementById('sheetOverlay').addEventListener('click', function(e) { if(e.target===this) closeSheet(); });
 
+const STAR_PATH = 'M16 2.5l3.09 6.26L26 9.77l-5 4.87 1.18 6.86L16 18.27l-6.18 3.23L11 14.64 6 9.77l6.91-1.01z';
+function starSVG(fill) {
+  // fill: 0(빈) ~ 1(꽉참), 0.5=반개
+  const clipW = Math.round(fill * 32);
+  const id = 'sc' + Math.random().toString(36).slice(2,7);
+  return `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <defs><clipPath id="${id}"><rect x="0" y="0" width="${clipW}" height="32"/></clipPath></defs>
+    <path d="${STAR_PATH}" fill="#2e2e42" stroke="#3a3a58" stroke-width="1"/>
+    <path d="${STAR_PATH}" fill="#f5c518" clip-path="url(#${id})"/>
+  </svg>`;
+}
 function renderStarsTo(containerId, rating, onSet) {
   const el = document.getElementById(containerId);
+  if (!el) return;
   el.innerHTML = [1,2,3,4,5].map(i => {
-    const fill = Math.min(Math.max(rating - (i-1), 0), 1) * 100;
+    const fill = Math.min(Math.max(rating - (i-1), 0), 1);
     return `<div class="star-wrap">
-      <span class="star-base">★</span>
-      <span class="star-fill" style="width:${fill}%">★</span>
+      ${starSVG(fill)}
       <span class="star-half-l" onclick="${onSet}(${i-0.5})"></span>
       <span class="star-half-r" onclick="${onSet}(${i})"></span>
     </div>`;
@@ -630,14 +663,14 @@ function renderAllWishSheet() {
   } else {
     listEl.innerHTML = sorted.map(w => {
       const cat = CATEGORIES.find(c => c.key === w.cat);
-      return `<div class="cat-book-item">
+      return `<div class="cat-book-item" style="align-items:flex-start;gap:12px;">
+        <div style="flex-shrink:0;padding-top:2px;">
+          <span style="font-size:1.1rem;">${cat?cat.label.split(' ')[0]:'📚'}</span>
+        </div>
         <div style="flex:1;min-width:0;">
           <div class="cat-book-name">${w.title}</div>
-          <div style="display:flex;gap:8px;margin-top:3px;align-items:center;flex-wrap:wrap;">
-            ${cat?`<span class="cat-book-info">${cat.label}</span>`:''}
-            ${w.author?`<span class="cat-book-info">✍️ ${w.author}</span>`:''}
-          </div>
-          ${w.reason?`<div class="cat-book-info" style="margin-top:3px;font-style:italic;">"${w.reason}"</div>`:''}
+          ${w.author?`<div style="font-size:0.75rem;color:#7a7a9a;margin-top:3px;">✍️ ${w.author}</div>`:''}
+          ${w.reason?`<div style="font-size:0.78rem;color:#8888aa;margin-top:4px;font-style:italic;">"${w.reason}"</div>`:''}
         </div>
       </div>`;
     }).join('');
@@ -657,6 +690,44 @@ document.getElementById('allWishOverlay').addEventListener('click', function(e) 
   if (e.target === this) closeAllWishSheet();
 });
 
+function openAddWishSheet() {
+  document.getElementById('addWishInputTitle').value = '';
+  document.getElementById('addWishInputAuthor').value = '';
+  document.getElementById('addWishInputReason').value = '';
+  const catEl = document.getElementById('addWishCat');
+  catEl.value = ''; catEl.classList.remove('has-value');
+  document.getElementById('addWishOverlay').classList.add('show');
+}
+function closeAddWishSheet() {
+  document.getElementById('addWishOverlay').classList.remove('show');
+}
+document.getElementById('addWishOverlay').addEventListener('click', function(e) { if(e.target===this) closeAddWishSheet(); });
+
+async function addWishFromSheet() {
+  const titleEl = document.getElementById('addWishInputTitle');
+  const catEl = document.getElementById('addWishCat');
+  const reasonEl = document.getElementById('addWishInputReason');
+  const title = titleEl.value.trim();
+  const cat = catEl.value;
+  const author = document.getElementById('addWishInputAuthor').value.trim();
+  const reason = reasonEl.value.trim();
+  titleEl.classList.remove('error'); catEl.classList.remove('error'); reasonEl.classList.remove('error');
+  let hasError = false;
+  if (!title) { titleEl.classList.add('error'); hasError = true; }
+  if (!cat) { catEl.style.borderColor='#a855f7'; hasError = true; }
+  if (!reason) { reasonEl.classList.add('error'); hasError = true; }
+  if (hasError) { showToast('제목, 분야, 이유를 입력해주세요!'); return; }
+  catEl.style.borderColor = '';
+  const newWish = { id: String(Date.now()), title, author, reason, cat };
+  try {
+    await fetch(API, { method:'POST', body:JSON.stringify({ action:'wish_add', ...newWish }) });
+    wishlist.push(newWish);
+    renderWishCats();
+    closeAddWishSheet();
+    showToast('✅ 추가됐어요!');
+  } catch(e) { showToast('추가 실패. 다시 시도해주세요.'); }
+}
+
 // ── 위시리스트 바텀시트 ──
 let wishEditMode = false;
 
@@ -667,12 +738,8 @@ function openWishSheet(catKey) {
   const cat = CATEGORIES.find(c => c.key === catKey);
   document.getElementById('wishSheetName').textContent = cat.label;
   document.getElementById('wishSheetDesc').textContent = cat.desc;
-  document.getElementById('wishInputTitle').value = '';
-  document.getElementById('wishInputAuthor').value = '';
-  document.getElementById('wishInputReason').value = '';
   document.getElementById('wishEditBtn').textContent = '편집';
   document.getElementById('wishList').classList.remove('wish-edit-mode');
-  document.getElementById('wishAddBox').style.display = '';
   renderWishList();
   document.getElementById('wishOverlay').classList.add('show');
 }
@@ -687,21 +754,17 @@ function toggleWishEditMode() {
   wishEditMode = !wishEditMode;
   editingWishId = null;
   const listEl = document.getElementById('wishList');
-  const addBox = document.getElementById('wishAddBox');
   const btn = document.getElementById('wishEditBtn');
   if (wishEditMode) {
     listEl.classList.add('wish-edit-mode');
-    addBox.style.display = 'none';
     btn.textContent = '완료';
     btn.style.color = '#a855f7';
     btn.style.borderColor = '#a855f7';
   } else {
     listEl.classList.remove('wish-edit-mode');
-    addBox.style.display = '';
     btn.textContent = '편집';
     btn.style.color = '';
     btn.style.borderColor = '';
-    // 체크박스 초기화
     document.getElementById('wishSelectAll').checked = false;
     document.getElementById('btnDelSelected').disabled = true;
   }
@@ -755,8 +818,8 @@ function renderWishList() {
       <input type="checkbox" class="wish-item-check" data-id="${w.id}" onchange="updateDelBtn()">
       <div class="wish-item-body">
         <div class="wish-item-title">${w.title}</div>
-        ${w.author ? `<div class="wish-item-sub">✍️ ${w.author}</div>` : ''}
-        ${w.reason ? `<div class="wish-item-reason">"${w.reason}"</div>` : ''}
+        ${w.author ? `<div class="wish-item-sub" style="color:#7a7a9a;">✍️ ${w.author}</div>` : ''}
+        ${w.reason ? `<div class="wish-item-reason" style="color:#8888aa;">"${w.reason}"</div>` : ''}
       </div>
       <button class="wish-item-pencil" onclick="startEditWish('${w.id}')">✏️</button>
     </div>`;
@@ -1068,7 +1131,7 @@ function drawRadar(counts) {
 }
 
 document.getElementById('bookTitle').addEventListener('keydown', e => { if(e.key==='Enter') addBook(); });
-document.getElementById('wishInputTitle').addEventListener('keydown', e => { if(e.key==='Enter') addWish(); });
+document.getElementById('addWishInputTitle').addEventListener('keydown', e => { if(e.key==='Enter') addWishFromSheet(); });
 renderStarsTo('addStars', 0, 'setAddStar');
 loadBooks();
 </script>
