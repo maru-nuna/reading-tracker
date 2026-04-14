@@ -139,7 +139,7 @@
   .wish-item-body { flex:1; min-width:0; }
   .wish-item-title { font-size:0.88rem; font-weight:600; margin-bottom:3px; }
   .wish-item-sub { font-size:0.75rem; color:#666; margin-bottom:4px; }
-  .wish-item-reason { font-size:0.78rem; color:#888; font-style:italic; }
+  .wish-item-reason { font-size:0.78rem; color:#888; }
   .wish-item-pencil { flex-shrink:0; background:none; border:none; cursor:pointer; color:#555; font-size:1rem; padding:4px; display:none; transition:color 0.15s; }
   .wish-item-pencil:active { color:#6c63ff; }
   .wish-edit-mode .wish-item-pencil { display:block; }
@@ -669,8 +669,8 @@ function renderAllWishSheet() {
         </div>
         <div style="flex:1;min-width:0;">
           <div class="cat-book-name">${w.title}</div>
-          ${w.author?`<div style="font-size:0.75rem;color:#7a7a9a;margin-top:3px;">✍️ ${w.author}</div>`:''}
-          ${w.reason?`<div style="font-size:0.78rem;color:#8888aa;margin-top:4px;font-style:italic;">"${w.reason}"</div>`:''}
+          ${w.author?`<div style="font-size:0.75rem;color:#7a7a9a;margin-top:3px;">${w.author}</div>`:''}
+          ${w.reason?`<div style="font-size:0.78rem;color:#8888aa;margin-top:4px;">"${w.reason}"</div>`:''}
         </div>
       </div>`;
     }).join('');
@@ -818,7 +818,7 @@ function renderWishList() {
       <input type="checkbox" class="wish-item-check" data-id="${w.id}" onchange="updateDelBtn()">
       <div class="wish-item-body">
         <div class="wish-item-title">${w.title}</div>
-        ${w.author ? `<div class="wish-item-sub" style="color:#7a7a9a;">✍️ ${w.author}</div>` : ''}
+        ${w.author ? `<div class="wish-item-sub" style="color:#7a7a9a;">${w.author}</div>` : ''}
         ${w.reason ? `<div class="wish-item-reason" style="color:#8888aa;">"${w.reason}"</div>` : ''}
       </div>
       <button class="wish-item-pencil" onclick="startEditWish('${w.id}')">✏️</button>
