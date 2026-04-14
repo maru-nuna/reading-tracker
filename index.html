@@ -52,7 +52,7 @@
 
   /* 분야별 현황 */
   .stat-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
-  .stat-label { width:68px; font-size:0.82rem; white-space:nowrap; flex-shrink:0; }
+  .stat-label { width:82px; font-size:0.82rem; white-space:nowrap; flex-shrink:0; }
   .stat-bar-bg { flex:1; height:8px; background:#2a2a38; border-radius:4px; overflow:hidden; }
   .stat-bar-fill { height:100%; border-radius:4px; transition:width 0.5s ease; background:linear-gradient(90deg,#6c63ff,#a855f7); }
   .stat-count { width:28px; text-align:right; font-size:0.82rem; color:#a855f7; font-weight:600; }
@@ -211,7 +211,7 @@
     <span class="roulette-hint-text">무슨 책을 읽을지 고민 된다면?</span>
   </div>
   <div class="card">
-    <h2>✏️ 책 등록</h2>
+    <h2>✏️ 읽은 책 등록</h2>
     <div class="field">
       <label>책 제목</label>
       <input type="text" id="bookTitle" placeholder="책 제목 입력">
@@ -716,7 +716,7 @@ async function addWishFromSheet() {
   if (!title) { titleEl.classList.add('error'); hasError = true; }
   if (!cat) { catEl.style.borderColor='#a855f7'; hasError = true; }
   if (!reason) { reasonEl.classList.add('error'); hasError = true; }
-  if (hasError) { showToast('제목, 분야, 이유를 입력해주세요!'); return; }
+  if (hasError) { showToast('필수 항목을 입력해 주세요'); return; }
   catEl.style.borderColor = '';
   const newWish = { id: String(Date.now()), title, author, reason, cat };
   try {
@@ -837,7 +837,7 @@ async function addWish() {
   let hasError = false;
   if (!title) { titleEl.classList.add('error'); hasError = true; }
   if (!reason) { reasonEl.classList.add('error'); hasError = true; }
-  if (hasError) { showToast('제목과 이유를 입력해주세요!'); return; }
+  if (hasError) { showToast('필수 항목을 입력해 주세요'); return; }
 
   const newWish = { id: String(Date.now()), title, author, reason, cat: wishCatKey };
   try {
@@ -860,7 +860,7 @@ async function saveWishEdit(id) {
   const title = titleEl ? titleEl.value.trim() : '';
   const author = (document.getElementById('edit-author-'+id)||{}).value?.trim() || '';
   const reason = reasonEl ? reasonEl.value.trim() : '';
-  if (!title || !reason) { showToast('제목과 이유를 입력해주세요!'); return; }
+  if (!title || !reason) { showToast('필수 항목을 입력해 주세요'); return; }
   try {
     await fetch(API, { method:'POST', body:JSON.stringify({ action:'wish_edit', id, title, author, reason }) });
     const w = wishlist.find(w => w.id === id);
@@ -923,7 +923,14 @@ document.getElementById('rouletteOverlay').addEventListener('click', function(e)
 function drawWheel(rotation) {
   const canvas = document.getElementById('rouletteCanvas');
   const ctx = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
+  const dpr = window.devicePixelRatio || 1;
+  const size = 220;
+  canvas.width = size * dpr;
+  canvas.height = size * dpr;
+  canvas.style.width = size + 'px';
+  canvas.style.height = size + 'px';
+  ctx.scale(dpr, dpr);
+  const W = size, H = size;
   const cx = W/2, cy = H/2, r = cx - 4;
   const n = CATEGORIES.length;
   const slice = (Math.PI * 2) / n;
@@ -932,7 +939,6 @@ function drawWheel(rotation) {
   CATEGORIES.forEach((cat, i) => {
     const start = rotation + i * slice;
     const end = start + slice;
-    // 조각
     ctx.beginPath();
     ctx.moveTo(cx, cy);
     ctx.arc(cx, cy, r, start, end);
@@ -943,7 +949,6 @@ function drawWheel(rotation) {
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // 텍스트
     ctx.save();
     ctx.translate(cx, cy);
     ctx.rotate(start + slice / 2);
@@ -954,7 +959,6 @@ function drawWheel(rotation) {
     ctx.restore();
   });
 
-  // 중앙 원
   ctx.beginPath();
   ctx.arc(cx, cy, 18, 0, Math.PI * 2);
   ctx.fillStyle = '#0f0f14';
@@ -1046,7 +1050,7 @@ async function addBook() {
   let hasError = false;
   if (!title) { titleEl.classList.add('error'); hasError = true; }
   if (!cat) { catEl.classList.add('error'); hasError = true; }
-  if (hasError) { showToast(!title&&!cat?'책 제목과 분야를 입력해주세요!':!title?'책 제목을 입력해주세요!':'분야를 선택해주세요!'); return; }
+  if (hasError) { showToast('필수 항목을 입력해 주세요'); return; }
   const btn = document.getElementById('addBtn');
   btn.disabled = true; btn.textContent = '저장 중...';
   const dateVal = bookDateEl.value;
@@ -1090,10 +1094,9 @@ function render() {
 
   document.getElementById('statsList').innerHTML = CATEGORIES.map(c => `
     <div class="stat-row" onclick="openCatSheet('${c.key}')" style="cursor:pointer;margin:0 -6px;padding:4px 6px;border-radius:8px;" ontouchstart="this.style.background='#2a2a38'" ontouchend="this.style.background=''">
-      <span class="stat-label">${c.label}</span>
+      <span class="stat-label">${c.label} <span style="color:#6c63ff;font-size:0.85rem;font-weight:600;">›</span></span>
       <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:${counts[c.key]===0?'2%':(counts[c.key]/max)*100+'%'}"></div></div>
       <span class="stat-count">${counts[c.key]}</span>
-      <span style="color:#6c63ff;font-size:1rem;font-weight:600;margin-left:4px;flex-shrink:0;">›</span>
     </div>`).join('');
 
   renderWishCats();
@@ -1103,7 +1106,14 @@ function render() {
 function drawRadar(counts) {
   const canvas = document.getElementById('radar');
   const ctx = canvas.getContext('2d');
-  const W=canvas.width, H=canvas.height;
+  const dpr = window.devicePixelRatio || 1;
+  const size = 340;
+  canvas.width = size * dpr;
+  canvas.height = size * dpr;
+  canvas.style.width = size + 'px';
+  canvas.style.height = size + 'px';
+  ctx.scale(dpr, dpr);
+  const W = size, H = size;
   ctx.clearRect(0,0,W,H);
   const cx=W/2, cy=H/2, maxR=Math.min(W,H)*0.36, n=CATEGORIES.length;
   const vals=CATEGORIES.map(c=>counts[c.key]), maxVal=Math.max(...vals,5);
