@@ -213,11 +213,11 @@
   <div class="card">
     <h2>✏️ 읽은 책 등록</h2>
     <div class="field">
-      <label>책 제목</label>
+      <label>책 제목 <span style="color:#a855f7;">*</span></label>
       <input type="text" id="bookTitle" placeholder="책 제목 입력">
     </div>
     <div class="field">
-      <label>분야</label>
+      <label>분야 <span style="color:#a855f7;">*</span></label>
       <div class="select-wrap">
         <select id="bookCat" onchange="onCatChange(this)">
           <option value="">분야 선택</option>
@@ -240,11 +240,11 @@
       </div>
     </div>
     <div class="field">
-      <label>별점 <span style="color:#555;font-size:0.7rem;">(선택)</span></label>
+      <label>별점</label>
       <div class="stars-input" id="addStars" style="margin-bottom:0;"></div>
     </div>
     <div class="field">
-      <label>내가 몰랐던 것 <span style="color:#555;font-size:0.7rem;">(선택)</span></label>
+      <label>내가 몰랐던 것 <span style="color:#a855f7;">*</span></label>
       <textarea class="review-input" id="addReview" rows="2" placeholder="이 책을 읽고 알게된 내가 몰랐던 것"></textarea>
     </div>
     <button class="btn-add" id="addBtn" onclick="addBook()">+ 등록하기</button>
@@ -1044,12 +1044,15 @@ function setAddStar(rating) {
 async function addBook() {
   const titleEl = document.getElementById('bookTitle');
   const catEl = document.getElementById('bookCat');
+  const reviewEl = document.getElementById('addReview');
   const title = titleEl.value.trim();
   const cat = catEl.value;
-  titleEl.classList.remove('error'); catEl.classList.remove('error');
+  const reviewText = reviewEl.value.trim();
+  titleEl.classList.remove('error'); catEl.classList.remove('error'); reviewEl.classList.remove('error');
   let hasError = false;
   if (!title) { titleEl.classList.add('error'); hasError = true; }
   if (!cat) { catEl.classList.add('error'); hasError = true; }
+  if (!reviewText) { reviewEl.classList.add('error'); hasError = true; }
   if (hasError) { showToast('필수 항목을 입력해 주세요'); return; }
   const btn = document.getElementById('addBtn');
   btn.disabled = true; btn.textContent = '저장 중...';
@@ -1059,19 +1062,18 @@ async function addBook() {
   try {
     await fetch(API, { method:'POST', body:JSON.stringify({ action:'add', ...newBook }) });
     books.push(newBook);
-    // 별점/한줄평 저장
-    const reviewText = document.getElementById('addReview').value.trim();
+    // 별점/내가 몰랐던 것 저장
     if (addStarRating > 0 || reviewText) {
       const reviews = loadReviews();
       reviews[newBook.id] = { rating: addStarRating, text: reviewText };
       saveReviews(reviews);
     }
     // 폼 초기화
-    titleEl.value = ''; catEl.value = ''; bookDateEl.value = '';
+    titleEl.value = ''; catEl.value = ''; bookDateEl.value = ''; reviewEl.value = '';
     catEl.classList.remove('has-value'); datePlaceholderEl.style.opacity='1'; bookDateEl.classList.remove('has-value');
+    reviewEl.classList.remove('error');
     addStarRating = 0;
     renderStarsTo('addStars', 0, 'setAddStar');
-    document.getElementById('addReview').value = '';
     render(); showToast('✅ 등록됐어요!');
   } catch(e) { showToast('저장 실패. 다시 시도해주세요.'); }
   btn.disabled = false; btn.textContent = '+ 등록하기';
