@@ -174,18 +174,18 @@
 
   /* 카드 뒤집기 */
   .book-card-label { font-size:0.78rem; color:#888; margin-bottom:14px; text-align:center; }
-  .book-card { width:220px; height:140px; perspective:1000px; cursor:pointer; margin:0 auto; }
-  .book-card-inner { width:100%; height:100%; position:relative; transform-style:preserve-3d; transition:transform 0.7s cubic-bezier(0.4,0,0.2,1); border-radius:16px; }
+  .book-card { width:260px; height:160px; perspective:1000px; cursor:pointer; margin:0 auto; }
+  .book-card-inner { width:100%; height:100%; position:relative; transform-style:preserve-3d; transition:transform 0.7s cubic-bezier(0.4,0,0.2,1); border-radius:20px; }
   .book-card.flipped .book-card-inner { transform:rotateY(180deg); }
-  .book-card-front, .book-card-back { position:absolute; inset:0; border-radius:16px; display:flex; align-items:center; justify-content:center; backface-visibility:hidden; -webkit-backface-visibility:hidden; flex-direction:column; padding:16px; }
-  .book-card-front { background:#1a1a24; border:1.5px solid #6c63ff; box-shadow:0 0 16px rgba(108,99,255,0.5), 0 0 32px rgba(168,85,247,0.25); font-size:2.8rem; gap:8px; animation:cardGlow 2s ease-in-out infinite; }
-  .book-card-front::before { content:''; position:absolute; inset:7px; border-radius:10px; border:1px solid #2a2a38; pointer-events:none; }
+  .book-card-front, .book-card-back { position:absolute; inset:0; border-radius:20px; display:flex; align-items:center; justify-content:center; backface-visibility:hidden; -webkit-backface-visibility:hidden; flex-direction:column; padding:16px; }
+  .book-card-front { background:#1a1a24; font-size:3.2rem; gap:8px; animation:cardGlow 1.8s ease-in-out infinite; }
+  .book-card-front::before { content:''; position:absolute; inset:8px; border-radius:13px; border:1px solid rgba(108,99,255,0.2); pointer-events:none; }
   @keyframes cardGlow {
-    0%, 100% { box-shadow:0 0 14px rgba(108,99,255,0.5), 0 0 28px rgba(168,85,247,0.2); border-color:#6c63ff; }
-    50% { box-shadow:0 0 24px rgba(168,85,247,0.8), 0 0 48px rgba(108,99,255,0.35); border-color:#a855f7; }
+    0%, 100% { box-shadow:0 0 20px rgba(108,99,255,0.6), 0 0 50px rgba(168,85,247,0.3), 0 0 80px rgba(108,99,255,0.1); }
+    50% { box-shadow:0 0 35px rgba(168,85,247,0.9), 0 0 70px rgba(108,99,255,0.5), 0 0 110px rgba(168,85,247,0.2); }
   }
-  .book-card.flipped .book-card-front { animation:none; }
-  .book-card-back { background:#1a1a24; border:1.5px solid #3a3a50; box-shadow:0 4px 20px rgba(0,0,0,0.4); transform:rotateY(180deg); font-size:0.92rem; font-weight:600; color:#e8e8f0; text-align:center; line-height:1.5; gap:6px; }
+  .book-card.flipped .book-card-front { animation:none; box-shadow:none; }
+  .book-card-back { background:#1a1a24; box-shadow:0 8px 32px rgba(0,0,0,0.5); transform:rotateY(180deg); font-size:0.92rem; font-weight:600; color:#e8e8f0; text-align:center; line-height:1.5; gap:6px; }
   .book-card-back .card-no-wish { font-size:0.82rem; color:#555; font-weight:400; }
   .roulette-hint { display:flex; align-items:center; gap:8px; margin-bottom:10px; cursor:pointer; width:fit-content; }
   .roulette-hint-icon { width:22px; height:22px; border-radius:50%; border:1.5px solid #6c63ff; display:flex; align-items:center; justify-content:center; color:#6c63ff; font-size:0.78rem; font-weight:700; flex-shrink:0; }
@@ -766,9 +766,7 @@ function openWishSheet(catKey) {
   editBtn.textContent = '편집';
   editBtn.style.color = '';
   editBtn.style.borderColor = '';
-  const hasBooks = wishlist.filter(w => w.cat === catKey).length > 0;
-  editBtn.disabled = !hasBooks;
-  editBtn.style.display = hasBooks ? '' : 'none';
+  editBtn.style.display = wishlist.filter(w => w.cat === catKey).length > 0 ? '' : 'none';
   document.getElementById('wishList').classList.remove('wish-edit-mode');
   renderWishList();
   document.getElementById('wishOverlay').classList.add('show');
