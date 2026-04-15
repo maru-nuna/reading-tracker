@@ -6,6 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="학습지도">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
 <title>🌍 나의 학습 지도</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -172,14 +173,19 @@
 
 
   /* 카드 뒤집기 */
-  .book-card-label { font-size:0.78rem; color:#888; margin-bottom:10px; text-align:center; }
-  .book-card { width:200px; height:120px; perspective:1000px; cursor:pointer; margin:0 auto; }
-  .book-card-inner { width:100%; height:100%; position:relative; transform-style:preserve-3d; transition:transform 0.7s cubic-bezier(0.4,0,0.2,1); border-radius:14px; }
+  .book-card-label { font-size:0.78rem; color:#888; margin-bottom:14px; text-align:center; }
+  .book-card { width:220px; height:140px; perspective:1000px; cursor:pointer; margin:0 auto; }
+  .book-card-inner { width:100%; height:100%; position:relative; transform-style:preserve-3d; transition:transform 0.7s cubic-bezier(0.4,0,0.2,1); border-radius:16px; }
   .book-card.flipped .book-card-inner { transform:rotateY(180deg); }
-  .book-card-front, .book-card-back { position:absolute; inset:0; border-radius:14px; display:flex; align-items:center; justify-content:center; backface-visibility:hidden; -webkit-backface-visibility:hidden; flex-direction:column; padding:14px 16px; }
-  .book-card-front { background:#1a1a24; border:1.5px solid #3a3a50; box-shadow:0 4px 20px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.03); font-size:2.2rem; gap:6px; }
-  .book-card-front::before { content:''; position:absolute; inset:6px; border-radius:9px; border:1px solid #2a2a38; pointer-events:none; }
-  .book-card-back { background:#1a1a24; border:1.5px solid #6c63ff; box-shadow:0 4px 20px rgba(108,99,255,0.25); transform:rotateY(180deg); font-size:0.88rem; font-weight:600; color:#e8e8f0; text-align:center; line-height:1.5; gap:4px; }
+  .book-card-front, .book-card-back { position:absolute; inset:0; border-radius:16px; display:flex; align-items:center; justify-content:center; backface-visibility:hidden; -webkit-backface-visibility:hidden; flex-direction:column; padding:16px; }
+  .book-card-front { background:#1a1a24; border:1.5px solid #6c63ff; box-shadow:0 0 16px rgba(108,99,255,0.5), 0 0 32px rgba(168,85,247,0.25); font-size:2.8rem; gap:8px; animation:cardGlow 2s ease-in-out infinite; }
+  .book-card-front::before { content:''; position:absolute; inset:7px; border-radius:10px; border:1px solid #2a2a38; pointer-events:none; }
+  @keyframes cardGlow {
+    0%, 100% { box-shadow:0 0 14px rgba(108,99,255,0.5), 0 0 28px rgba(168,85,247,0.2); border-color:#6c63ff; }
+    50% { box-shadow:0 0 24px rgba(168,85,247,0.8), 0 0 48px rgba(108,99,255,0.35); border-color:#a855f7; }
+  }
+  .book-card.flipped .book-card-front { animation:none; }
+  .book-card-back { background:#1a1a24; border:1.5px solid #3a3a50; box-shadow:0 4px 20px rgba(0,0,0,0.4); transform:rotateY(180deg); font-size:0.92rem; font-weight:600; color:#e8e8f0; text-align:center; line-height:1.5; gap:6px; }
   .book-card-back .card-no-wish { font-size:0.82rem; color:#555; font-weight:400; }
   .roulette-hint { display:flex; align-items:center; gap:8px; margin-bottom:10px; cursor:pointer; width:fit-content; }
   .roulette-hint-icon { width:22px; height:22px; border-radius:50%; border:1.5px solid #6c63ff; display:flex; align-items:center; justify-content:center; color:#6c63ff; font-size:0.78rem; font-weight:700; flex-shrink:0; }
@@ -285,7 +291,7 @@
       <div class="book-card-label">무슨 책을 읽을지 고민된다면?</div>
       <div class="book-card" id="bookCard" onclick="flipCard()">
         <div class="book-card-inner" id="bookCardInner">
-          <div class="book-card-front">🃏<span style="font-size:0.75rem;color:#666;">탭해서 뽑기</span></div>
+          <div class="book-card-front">🃏<span style="font-size:0.78rem;color:#6c63ff;letter-spacing:0.03em;">탭해서 뽑기</span></div>
           <div class="book-card-back" id="bookCardBack"></div>
         </div>
       </div>
@@ -756,7 +762,13 @@ function openWishSheet(catKey) {
   const cat = CATEGORIES.find(c => c.key === catKey);
   document.getElementById('wishSheetName').textContent = cat.label;
   document.getElementById('wishSheetDesc').textContent = cat.desc;
-  document.getElementById('wishEditBtn').textContent = '편집';
+  const editBtn = document.getElementById('wishEditBtn');
+  editBtn.textContent = '편집';
+  editBtn.style.color = '';
+  editBtn.style.borderColor = '';
+  const hasBooks = wishlist.filter(w => w.cat === catKey).length > 0;
+  editBtn.disabled = !hasBooks;
+  editBtn.style.display = hasBooks ? '' : 'none';
   document.getElementById('wishList').classList.remove('wish-edit-mode');
   renderWishList();
   document.getElementById('wishOverlay').classList.add('show');
