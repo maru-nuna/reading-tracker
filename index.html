@@ -171,7 +171,16 @@
   .btn-confirm { background:#ff6b6b; color:#fff; }
 
 
-  /* 룰렛 힌트 */
+  /* 카드 뒤집기 */
+  .book-card-label { font-size:0.78rem; color:#888; margin-bottom:10px; text-align:center; }
+  .book-card { width:200px; height:120px; perspective:1000px; cursor:pointer; margin:0 auto; }
+  .book-card-inner { width:100%; height:100%; position:relative; transform-style:preserve-3d; transition:transform 0.7s cubic-bezier(0.4,0,0.2,1); border-radius:14px; }
+  .book-card.flipped .book-card-inner { transform:rotateY(180deg); }
+  .book-card-front, .book-card-back { position:absolute; inset:0; border-radius:14px; display:flex; align-items:center; justify-content:center; backface-visibility:hidden; -webkit-backface-visibility:hidden; flex-direction:column; padding:14px 16px; }
+  .book-card-front { background:#1a1a24; border:1.5px solid #3a3a50; box-shadow:0 4px 20px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.03); font-size:2.2rem; gap:6px; }
+  .book-card-front::before { content:''; position:absolute; inset:6px; border-radius:9px; border:1px solid #2a2a38; pointer-events:none; }
+  .book-card-back { background:#1a1a24; border:1.5px solid #6c63ff; box-shadow:0 4px 20px rgba(108,99,255,0.25); transform:rotateY(180deg); font-size:0.88rem; font-weight:600; color:#e8e8f0; text-align:center; line-height:1.5; gap:4px; }
+  .book-card-back .card-no-wish { font-size:0.82rem; color:#555; font-weight:400; }
   .roulette-hint { display:flex; align-items:center; gap:8px; margin-bottom:10px; cursor:pointer; width:fit-content; }
   .roulette-hint-icon { width:22px; height:22px; border-radius:50%; border:1.5px solid #6c63ff; display:flex; align-items:center; justify-content:center; color:#6c63ff; font-size:0.78rem; font-weight:700; flex-shrink:0; }
   .roulette-hint-text { font-size:0.8rem; color:#6c63ff; text-decoration:underline; text-underline-offset:2px; }
@@ -272,6 +281,15 @@
       <canvas class="roulette-canvas" id="rouletteCanvas" width="220" height="220"></canvas>
     </div>
     <div class="roulette-result" id="rouletteResult"></div>
+    <div id="bookCardWrap" style="display:none;margin-bottom:16px;">
+      <div class="book-card-label">무슨 책을 읽을지 고민된다면?</div>
+      <div class="book-card" id="bookCard" onclick="flipCard()">
+        <div class="book-card-inner" id="bookCardInner">
+          <div class="book-card-front">🃏<span style="font-size:0.75rem;color:#666;">탭해서 뽑기</span></div>
+          <div class="book-card-back" id="bookCardBack"></div>
+        </div>
+      </div>
+    </div>
     <div class="roulette-btns">
       <button class="btn-spin" id="btnSpin" onclick="spinRoulette()">🎲 돌리기</button>
       <button class="btn-roulette-close" onclick="closeRoulette()">닫기</button>
@@ -905,9 +923,26 @@ const ROULETTE_COLORS = [
 let isSpinning = false;
 let currentAngle = 0;
 
+function flipCard() {
+  const card = document.getElementById('bookCard');
+  if (card.classList.contains('flipped')) return;
+  const catKey = document.getElementById('bookCardBack').dataset.cat;
+  const wishes = wishlist.filter(w => w.cat === catKey);
+  const back = document.getElementById('bookCardBack');
+  if (!wishes.length) {
+    back.innerHTML = '<span class="card-no-wish">아직 이 분야에<br>읽고 싶은 책이 없어요 🥲</span>';
+  } else {
+    const picked = wishes[Math.floor(Math.random() * wishes.length)];
+    back.innerHTML = `<span style="font-size:0.72rem;color:#a855f7;margin-bottom:4px;">이 책 어때요?</span>${picked.title}${picked.author?`<span style="font-size:0.75rem;color:#666;margin-top:4px;font-weight:400;">${picked.author}</span>`:''}`;
+  }
+  card.classList.add('flipped');
+}
+
 function openRoulette() {
   document.getElementById('rouletteResult').textContent = '';
   document.getElementById('btnSpin').disabled = false;
+  document.getElementById('bookCardWrap').style.display = 'none';
+  document.getElementById('bookCard').classList.remove('flipped');
   document.getElementById('rouletteOverlay').classList.add('show');
   drawWheel(currentAngle);
 }
@@ -1000,12 +1035,24 @@ function spinRoulette() {
       currentAngle = endAngle;
       isSpinning = false;
       document.getElementById('btnSpin').disabled = false;
-      // 바늘(-π/2) 위치의 조각 인덱스 계산
       const normalized = ((currentAngle % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
       const needleAngle = (Math.PI*2 - (-Math.PI/2 - normalized) % (Math.PI*2) + Math.PI*2) % (Math.PI*2);
       const result = Math.floor(((Math.PI/2 - (currentAngle % (Math.PI*2)) % (Math.PI*2) + Math.PI*4) % (Math.PI*2)) / (Math.PI*2/n)) % n;
       const cat = CATEGORIES[winIndex];
       document.getElementById('rouletteResult').textContent = `${cat.label} 분야를 읽어봐요!`;
+      // 해당 분야 위시리스트 있을 때만 카드 표시
+      const wishes = wishlist.filter(w => w.cat === cat.key);
+      const cardWrap = document.getElementById('bookCardWrap');
+      if (wishes.length > 0) {
+        const card = document.getElementById('bookCard');
+        const cardBack = document.getElementById('bookCardBack');
+        card.classList.remove('flipped');
+        cardBack.innerHTML = '';
+        cardBack.dataset.cat = cat.key;
+        cardWrap.style.display = 'block';
+      } else {
+        cardWrap.style.display = 'none';
+      }
     }
   }
   requestAnimationFrame(animate);
