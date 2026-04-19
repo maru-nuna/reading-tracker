@@ -210,6 +210,17 @@
   .sort-btn.active { background:#6c63ff; border-color:#6c63ff; color:#fff; }
   .toast { position:fixed; bottom:32px; left:50%; transform:translateX(-50%) translateY(20px); background:#2a2a38; color:#e8e8f0; padding:10px 20px; border-radius:20px; font-size:0.85rem; opacity:0; transition:all 0.3s; pointer-events:none; white-space:nowrap; z-index:999; }
   .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* 현재 읽는 책 */
+  .reading-empty { text-align:center; color:#444; font-size:0.85rem; padding:8px 0 4px; }
+  .reading-item { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid #2a2a38; }
+  .reading-item:last-child { border-bottom:none; }
+  .reading-cat-badge { font-size:1.1rem; flex-shrink:0; }
+  .reading-info { flex:1; min-width:0; }
+  .reading-title { font-size:0.9rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .reading-author { font-size:0.75rem; color:#666; margin-top:2px; }
+  .reading-del { background:none; border:none; color:#3a3a50; font-size:1rem; cursor:pointer; padding:4px; flex-shrink:0; transition:color 0.15s; }
+  .reading-del:active { color:#ff6b6b; }
 </style>
 </head>
 <body>
@@ -220,52 +231,19 @@
 
   <div class="chart-wrap"><canvas id="radar" width="340" height="340"></canvas></div>
 
+  <!-- 현재 읽는 책 -->
+  <div class="card">
+    <h2>📖 현재 읽는 책 <button onclick="openAddReadingSheet()" style="background:linear-gradient(135deg,#6c63ff,#a855f7);border:none;border-radius:20px;color:#fff;font-size:0.72rem;font-weight:600;padding:3px 10px;cursor:pointer;font-family:inherit;margin-left:4px;">+ 추가</button></h2>
+    <div id="readingList"></div>
+  </div>
+
   <div class="roulette-hint" onclick="openRoulette()">
     <div class="roulette-hint-icon">!</div>
     <span class="roulette-hint-text">무슨 책을 읽을지 고민 된다면?</span>
   </div>
-  <div class="card">
-    <h2>✏️ 읽은 책 등록</h2>
-    <div class="field">
-      <label>책 제목 <span style="color:#a855f7;">*</span></label>
-      <input type="text" id="bookTitle" placeholder="책 제목 입력">
-    </div>
-    <div class="field">
-      <label>분야 <span style="color:#a855f7;">*</span></label>
-      <div class="select-wrap">
-        <select id="bookCat" onchange="onCatChange(this)">
-          <option value="">분야 선택</option>
-          <option value="경제">💰 경제</option>
-          <option value="육아">👶 육아</option>
-          <option value="철학">🧠 철학</option>
-          <option value="예술">🎨 예술</option>
-          <option value="역사">📜 역사</option>
-          <option value="문화">🌍 문화</option>
-          <option value="과학">🔬 과학</option>
-          <option value="심리">💖 심리</option>
-        </select>
-      </div>
-    </div>
-    <div class="field">
-      <label>완독일</label>
-      <div class="date-wrap">
-        <input type="date" id="bookDate">
-        <span class="date-placeholder" id="datePlaceholder">날짜 선택</span>
-      </div>
-    </div>
-    <div class="field">
-      <label>별점</label>
-      <div class="stars-input" id="addStars" style="margin-bottom:0;"></div>
-    </div>
-    <div class="field">
-      <label>내가 몰랐던 것 <span style="color:#a855f7;">*</span></label>
-      <textarea class="review-input" id="addReview" rows="2" placeholder="이 책을 읽고 알게된 내가 몰랐던 것"></textarea>
-    </div>
-    <button class="btn-add" id="addBtn" onclick="addBook()">+ 등록하기</button>
-  </div>
 
   <div class="card">
-    <h2>📊 분야별 현황 <span class="total-badge" id="totalBadge" onclick="openAllBooksSheet()" style="cursor:pointer;">0권 ›</span></h2>
+    <h2>📊 분야별 현황 <span class="total-badge" id="totalBadge" onclick="openAllBooksSheet()" style="cursor:pointer;">0권 ›</span> <button onclick="openAddBookSheet()" style="background:linear-gradient(135deg,#6c63ff,#a855f7);border:none;border-radius:20px;color:#fff;font-size:0.72rem;font-weight:600;padding:3px 10px;cursor:pointer;font-family:inherit;margin-left:4px;">+ 등록하기</button></h2>
     <div id="statsList"></div>
   </div>
 
@@ -299,6 +277,69 @@
       <button class="btn-spin" id="btnSpin" onclick="spinRoulette()">🎲 돌리기</button>
       <button class="btn-roulette-close" onclick="closeRoulette()">닫기</button>
     </div>
+  </div>
+</div>
+
+<!-- 읽은 책 등록 바텀시트 -->
+<div class="overlay" id="addBookOverlay">
+  <div class="bottom-sheet">
+    <div class="sheet-handle"></div>
+    <div class="field">
+      <label>제목 <span style="color:#a855f7;">*</span></label>
+      <input type="text" id="bookTitle" placeholder="입력하기">
+    </div>
+    <div class="field">
+      <label>분야 <span style="color:#a855f7;">*</span></label>
+      <div class="select-wrap">
+        <select id="bookCat" onchange="onCatChange(this)">
+          <option value="">선택</option>
+          <option value="경제">💰 경제</option>
+          <option value="육아">👶 육아</option>
+          <option value="철학">🧠 철학</option>
+          <option value="예술">🎨 예술</option>
+          <option value="역사">📜 역사</option>
+          <option value="문화">🌍 문화</option>
+          <option value="과학">🔬 과학</option>
+          <option value="심리">💖 심리</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>완독일</label>
+      <div class="date-wrap">
+        <input type="date" id="bookDate">
+        <span class="date-placeholder" id="datePlaceholder">선택</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>별점</label>
+      <div class="stars-input" id="addStars" style="margin-bottom:0;"></div>
+    </div>
+    <div class="field">
+      <label>내가 몰랐던 것 <span style="color:#a855f7;">*</span></label>
+      <textarea class="review-input" id="addReview" rows="2" placeholder="이 책을 읽고 알게된 내가 몰랐던 것"></textarea>
+    </div>
+    <button class="btn-add" id="addBtn" onclick="addBook()">+ 등록하기</button>
+  </div>
+</div>
+
+<!-- 현재 읽는 책 추가 바텀시트 -->
+<div class="overlay" id="addReadingOverlay">
+  <div class="bottom-sheet">
+    <div class="sheet-handle"></div>
+    <div class="field">
+      <label>제목 <span style="color:#a855f7;">*</span></label>
+      <input type="text" id="readingTitle" placeholder="입력하기">
+    </div>
+    <div class="field">
+      <label>저자</label>
+      <input type="text" id="readingAuthor" placeholder="입력하기">
+    </div>
+    <div class="field">
+      <label>분야 <span style="color:#a855f7;">*</span></label>
+      <div id="readingCatGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:2px;"></div>
+    </div>
+    <button class="btn-add" style="margin-top:8px;" onclick="addReading()">+ 추가하기</button>
   </div>
 </div>
 
@@ -365,36 +406,35 @@
 <div class="overlay" id="addWishOverlay">
   <div class="bottom-sheet">
     <div class="sheet-handle"></div>
-    <div style="font-size:1rem;font-weight:700;margin-bottom:16px;">읽고 싶은 책 등록</div>
-    <div class="wish-add-box" style="background:transparent;border:none;padding:0;">
-      <div class="wish-add-row">
-        <input class="wish-input" id="addWishInputTitle" placeholder="읽고 싶은 책 제목 (필수)" style="background:#0f0f14;">
-      </div>
-      <div class="wish-add-row">
-        <input class="wish-input" id="addWishInputAuthor" placeholder="저자 (선택)" style="background:#0f0f14;">
-      </div>
-      <div class="wish-add-row">
-        <div class="select-wrap" style="width:100%;">
-          <select id="addWishCat" onchange="this.classList.toggle('has-value',!!this.value)" style="width:100%;background:#0f0f14;border:1px solid #2a2a38;border-radius:8px;padding:11px 12px;font-size:0.9rem;font-family:inherit;outline:none;color:#555;-webkit-appearance:none;appearance:none;">
-            <option value="">분야 선택 (필수)</option>
-            <option value="경제">💰 경제</option>
-            <option value="육아">👶 육아</option>
-            <option value="철학">🧠 철학</option>
-            <option value="예술">🎨 예술</option>
-            <option value="역사">📜 역사</option>
-            <option value="문화">🌍 문화</option>
-            <option value="과학">🔬 과학</option>
-            <option value="심리">💖 심리</option>
-          </select>
-        </div>
-      </div>
-      <div class="wish-add-row">
-        <input class="wish-input" id="addWishInputReason" placeholder="읽고 싶은 이유 (필수)" style="background:#0f0f14;">
-      </div>
-      <div class="wish-add-row">
-        <button class="btn-add" onclick="addWishFromSheet()" style="margin:0;">+ 추가하기</button>
+    <div class="field">
+      <label>제목 <span style="color:#a855f7;">*</span></label>
+      <input type="text" id="addWishInputTitle" placeholder="입력하기">
+    </div>
+    <div class="field">
+      <label>저자</label>
+      <input type="text" id="addWishInputAuthor" placeholder="입력하기">
+    </div>
+    <div class="field">
+      <label>분야 <span style="color:#a855f7;">*</span></label>
+      <div class="select-wrap">
+        <select id="addWishCat" onchange="this.classList.toggle('has-value',!!this.value)">
+          <option value="">선택</option>
+          <option value="경제">💰 경제</option>
+          <option value="육아">👶 육아</option>
+          <option value="철학">🧠 철학</option>
+          <option value="예술">🎨 예술</option>
+          <option value="역사">📜 역사</option>
+          <option value="문화">🌍 문화</option>
+          <option value="과학">🔬 과학</option>
+          <option value="심리">💖 심리</option>
+        </select>
       </div>
     </div>
+    <div class="field">
+      <label>읽고 싶은 이유 <span style="color:#a855f7;">*</span></label>
+      <input type="text" id="addWishInputReason" placeholder="입력하기">
+    </div>
+    <button class="btn-add" onclick="addWishFromSheet()" style="margin-top:4px;">+ 추가하기</button>
   </div>
 </div>
 
@@ -1131,11 +1171,112 @@ async function addBook() {
     addStarRating = 0;
     renderStarsTo('addStars', 0, 'setAddStar');
     render(); showToast('✅ 등록됐어요!');
+    document.getElementById('addBookOverlay').classList.remove('show');
   } catch(e) { showToast('저장 실패. 다시 시도해주세요.'); }
   btn.disabled = false; btn.textContent = '+ 등록하기';
 }
 
 document.getElementById('bookTitle').addEventListener('input', function() { this.classList.remove('error'); });
+
+// ── 읽은 책 등록 바텀시트 ──
+function openAddBookSheet() {
+  document.getElementById('bookTitle').value = '';
+  document.getElementById('bookCat').value = '';
+  document.getElementById('bookCat').classList.remove('has-value');
+  bookDateEl.value = ''; datePlaceholderEl.style.opacity = '1'; bookDateEl.classList.remove('has-value');
+  document.getElementById('addReview').value = '';
+  addStarRating = 0;
+  renderStarsTo('addStars', 0, 'setAddStar');
+  document.getElementById('addBookOverlay').classList.add('show');
+}
+document.getElementById('addBookOverlay').addEventListener('click', function(e) { if(e.target===this) this.classList.remove('show'); });
+
+// ── 현재 읽는 책 ──
+function loadReading() { try { return JSON.parse(localStorage.getItem('reading') || '[]'); } catch { return []; } }
+function saveReading(r) { localStorage.setItem('reading', JSON.stringify(r)); }
+
+function renderReading() {
+  const reading = loadReading();
+  const el = document.getElementById('readingList');
+  if (!reading.length) {
+    el.innerHTML = '<p class="reading-empty">지금 읽고 있는 책을 추가해보세요</p>';
+    return;
+  }
+  el.innerHTML = reading.map(r => {
+    const cat = CATEGORIES.find(c => c.key === r.cat);
+    return `<div class="reading-item">
+      <span class="reading-cat-badge">${cat ? cat.label.split(' ')[0] : '📚'}</span>
+      <div class="reading-info">
+        <div class="reading-title">${r.title}</div>
+        ${r.author ? `<div class="reading-author">${r.author}</div>` : ''}
+      </div>
+      <button class="reading-del" onclick="deleteReading('${r.id}')">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function deleteReading(id) {
+  const reading = loadReading().filter(r => r.id !== id);
+  saveReading(reading);
+  renderReading();
+  renderReadingCatGrid();
+}
+
+function openAddReadingSheet() {
+  document.getElementById('readingTitle').value = '';
+  document.getElementById('readingAuthor').value = '';
+  renderReadingCatGrid();
+  document.getElementById('addReadingOverlay').classList.add('show');
+}
+document.getElementById('addReadingOverlay').addEventListener('click', function(e) { if(e.target===this) this.classList.remove('show'); });
+
+function renderReadingCatGrid() {
+  const reading = loadReading();
+  const usedCats = reading.map(r => r.cat);
+  let selectedCat = '';
+  const grid = document.getElementById('readingCatGrid');
+  grid.innerHTML = CATEGORIES.map(c => {
+    const used = usedCats.includes(c.key);
+    return `<button onclick="selectReadingCat('${c.key}', ${used})" id="rcBtn_${c.key}"
+      style="padding:8px 4px;border-radius:10px;border:1.5px solid ${used?'#222':'#2a2a38'};
+      background:${used?'#181820':'#1a1a24'};color:${used?'#3a3a3a':'#e8e8f0'};
+      font-size:0.78rem;cursor:${used?'default':'pointer'};font-family:inherit;
+      display:flex;flex-direction:column;align-items:center;gap:3px;opacity:${used?'0.35':'1'};transition:all 0.15s;">
+      <span style="font-size:1.2rem;">${c.label.split(' ')[0]}</span>
+      <span>${c.label.split(' ')[1]}</span>
+    </button>`;
+  }).join('');
+}
+
+function selectReadingCat(key, used) {
+  if (used) return;
+  document.querySelectorAll('[id^="rcBtn_"]').forEach(btn => {
+    btn.style.borderColor = '#2a2a38';
+    btn.style.background = '#1a1a24';
+  });
+  const btn = document.getElementById('rcBtn_' + key);
+  btn.style.borderColor = '#6c63ff';
+  btn.style.background = '#1e1e2e';
+  btn.dataset.selected = 'true';
+  window._selectedReadingCat = key;
+}
+
+function addReading() {
+  const titleEl = document.getElementById('readingTitle');
+  const title = titleEl.value.trim();
+  const author = document.getElementById('readingAuthor').value.trim();
+  const cat = window._selectedReadingCat || '';
+  titleEl.classList.remove('error');
+  if (!title) { titleEl.classList.add('error'); showToast('필수 항목을 입력해 주세요'); return; }
+  if (!cat) { showToast('필수 항목을 입력해 주세요'); return; }
+  const reading = loadReading();
+  reading.push({ id: String(Date.now()), title, author, cat });
+  saveReading(reading);
+  window._selectedReadingCat = '';
+  document.getElementById('addReadingOverlay').classList.remove('show');
+  renderReading();
+  showToast('✅ 추가됐어요!');
+}
 
 function getCounts() {
   const counts = {};
@@ -1158,6 +1299,7 @@ function render() {
     </div>`).join('');
 
   renderWishCats();
+  renderReading();
   drawRadar(counts);
 }
 
@@ -1201,6 +1343,7 @@ function drawRadar(counts) {
 document.getElementById('bookTitle').addEventListener('keydown', e => { if(e.key==='Enter') addBook(); });
 document.getElementById('addWishInputTitle').addEventListener('keydown', e => { if(e.key==='Enter') addWishFromSheet(); });
 renderStarsTo('addStars', 0, 'setAddStar');
+renderReading();
 loadBooks();
 </script>
 </body>
