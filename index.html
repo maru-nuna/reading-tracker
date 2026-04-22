@@ -233,7 +233,10 @@
 
   <!-- 현재 읽는 책 -->
   <div class="card">
-    <h2>📖 현재 읽는 책 <button onclick="openAddReadingSheet()" style="background:linear-gradient(135deg,#6c63ff,#a855f7);border:none;border-radius:20px;color:#fff;font-size:0.72rem;font-weight:600;padding:3px 10px;cursor:pointer;font-family:inherit;margin-left:4px;">+ 추가</button></h2>
+    <h2 style="display:flex;align-items:center;justify-content:space-between;">
+      <span>📖 현재 읽는 책 <button onclick="openAddReadingSheet()" style="background:linear-gradient(135deg,#6c63ff,#a855f7);border:none;border-radius:20px;color:#fff;font-size:0.72rem;font-weight:600;padding:3px 10px;cursor:pointer;font-family:inherit;margin-left:4px;">+ 추가</button></span>
+      <button id="readingEditBtn" onclick="toggleReadingEditMode()" style="background:none;border:1px solid #3a3a50;border-radius:8px;color:#aaa;font-size:0.78rem;padding:5px 12px;cursor:pointer;font-family:inherit;font-weight:500;">편집</button>
+    </h2>
     <div id="readingList"></div>
   </div>
 
@@ -343,6 +346,29 @@
   </div>
 </div>
 
+<!-- 현재 읽는 책 수정 바텀시트 -->
+<div class="overlay" id="editReadingOverlay">
+  <div class="bottom-sheet">
+    <div class="sheet-handle"></div>
+    <div class="field">
+      <label>제목 <span style="color:#a855f7;">*</span></label>
+      <input type="text" id="editReadingTitle" placeholder="입력하기">
+    </div>
+    <div class="field">
+      <label>저자</label>
+      <input type="text" id="editReadingAuthor" placeholder="입력하기">
+    </div>
+    <div class="field">
+      <label>분야 <span style="color:#a855f7;">*</span></label>
+      <div id="editReadingCatGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:2px;"></div>
+    </div>
+    <div class="sheet-btns" style="margin-top:8px;">
+      <button class="btn-save-review" onclick="saveReadingEdit()">저장</button>
+      <button class="btn-del-book" onclick="deleteReadingFromEdit()">삭제</button>
+    </div>
+  </div>
+</div>
+
 <!-- 책 상세 바텀시트 -->
 <div class="overlay" id="sheetOverlay">
   <div class="bottom-sheet">
@@ -444,7 +470,7 @@
     <div class="sheet-handle"></div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
       <div class="wish-sheet-name" id="wishSheetName"></div>
-      <button id="wishEditBtn" onclick="toggleWishEditMode()" style="background:none;border:1px solid #2a2a38;border-radius:8px;color:#aaa;font-size:0.78rem;padding:5px 10px;cursor:pointer;font-family:inherit;">편집</button>
+      <button id="wishEditBtn" onclick="toggleWishEditMode()" style="background:none;border:1px solid #3a3a50;border-radius:8px;color:#aaa;font-size:0.78rem;padding:5px 12px;cursor:pointer;font-family:inherit;font-weight:500;">편집</button>
     </div>
     <div class="wish-sheet-desc" id="wishSheetDesc"></div>
     <div class="wish-divider" style="margin-top:12px;"></div>
@@ -647,7 +673,7 @@ function renderAllBooksSheet() {
             ${rating>0?`<span class="cat-book-stars">${formatRating(rating)}</span>`:''}
           </div>
         </div>
-        <span style="color:#6c63ff;font-size:1rem;font-weight:600;">›</span>
+        <span style="color:#6c63ff;font-size:1.2rem;font-weight:700;">›</span>
       </div>`;
     }).join('');
   }
@@ -689,7 +715,7 @@ function openCatSheet(catKey) {
             ${rating>0?`<span class="cat-book-stars">${formatRating(rating)}</span>`:''}
           </div>
         </div>
-        <span style="color:#6c63ff;font-size:1rem;font-weight:600;">›</span>
+        <span style="color:#6c63ff;font-size:1.2rem;font-weight:700;">›</span>
       </div>`;
     }).join('');
   }
@@ -1195,10 +1221,32 @@ document.getElementById('addBookOverlay').addEventListener('click', function(e) 
 function loadReading() { try { return JSON.parse(localStorage.getItem('reading') || '[]'); } catch { return []; } }
 function saveReading(r) { localStorage.setItem('reading', JSON.stringify(r)); }
 
+let readingEditMode = false;
+
+function toggleReadingEditMode() {
+  const reading = loadReading();
+  if (!reading.length) return;
+  readingEditMode = !readingEditMode;
+  const btn = document.getElementById('readingEditBtn');
+  if (readingEditMode) {
+    btn.textContent = '완료';
+    btn.style.color = '#a855f7';
+    btn.style.borderColor = '#a855f7';
+  } else {
+    btn.textContent = '편집';
+    btn.style.color = '';
+    btn.style.borderColor = '';
+  }
+  renderReading();
+}
+
 function renderReading() {
   const reading = loadReading();
   const el = document.getElementById('readingList');
+  const editBtn = document.getElementById('readingEditBtn');
+  if (editBtn) editBtn.style.display = reading.length ? '' : 'none';
   if (!reading.length) {
+    readingEditMode = false;
     el.innerHTML = '<p class="reading-empty">지금 읽고 있는 책을 추가해보세요</p>';
     return;
   }
@@ -1210,7 +1258,10 @@ function renderReading() {
         <div class="reading-title">${r.title}</div>
         ${r.author ? `<div class="reading-author">${r.author}</div>` : ''}
       </div>
-      <button class="reading-del" onclick="deleteReading('${r.id}')">✕</button>
+      ${readingEditMode ? `
+        <button class="reading-del" onclick="openEditReadingSheet('${r.id}')" style="color:#6c63ff;margin-right:2px;">✏️</button>
+        <button class="reading-del" onclick="deleteReading('${r.id}')">✕</button>
+      ` : ''}
     </div>`;
   }).join('');
 }
@@ -1220,6 +1271,73 @@ function deleteReading(id) {
   saveReading(reading);
   renderReading();
   renderReadingCatGrid();
+}
+
+let _editingReadingId = null;
+
+function openEditReadingSheet(id) {
+  const r = loadReading().find(r => r.id === id);
+  if (!r) return;
+  _editingReadingId = id;
+  document.getElementById('editReadingTitle').value = r.title;
+  document.getElementById('editReadingAuthor').value = r.author || '';
+  // 분야 그리드 - 수정 시에는 현재 항목 분야는 사용 가능하게
+  const reading = loadReading();
+  const usedCats = reading.filter(item => item.id !== id).map(item => item.cat);
+  window._editSelectedReadingCat = r.cat;
+  const grid = document.getElementById('editReadingCatGrid');
+  grid.innerHTML = CATEGORIES.map(c => {
+    const used = usedCats.includes(c.key);
+    const selected = c.key === r.cat;
+    return `<button onclick="selectEditReadingCat('${c.key}', ${used})" id="ercBtn_${c.key}"
+      style="padding:8px 4px;border-radius:10px;
+      border:1.5px solid ${selected?'#6c63ff':used?'#222':'#2a2a38'};
+      background:${selected?'#1e1e2e':used?'#181820':'#1a1a24'};
+      color:${used?'#3a3a3a':'#e8e8f0'};
+      font-size:0.78rem;cursor:${used?'default':'pointer'};font-family:inherit;
+      display:flex;flex-direction:column;align-items:center;gap:3px;
+      opacity:${used?'0.35':'1'};transition:all 0.15s;">
+      <span style="font-size:1.2rem;">${c.label.split(' ')[0]}</span>
+      <span>${c.label.split(' ')[1]}</span>
+    </button>`;
+  }).join('');
+  document.getElementById('editReadingOverlay').classList.add('show');
+}
+document.getElementById('editReadingOverlay').addEventListener('click', function(e) { if(e.target===this) this.classList.remove('show'); });
+
+function selectEditReadingCat(key, used) {
+  if (used) return;
+  document.querySelectorAll('[id^="ercBtn_"]').forEach(btn => {
+    btn.style.borderColor = '#2a2a38';
+    btn.style.background = '#1a1a24';
+  });
+  const btn = document.getElementById('ercBtn_' + key);
+  btn.style.borderColor = '#6c63ff';
+  btn.style.background = '#1e1e2e';
+  window._editSelectedReadingCat = key;
+}
+
+function saveReadingEdit() {
+  const titleEl = document.getElementById('editReadingTitle');
+  const title = titleEl.value.trim();
+  const author = document.getElementById('editReadingAuthor').value.trim();
+  const cat = window._editSelectedReadingCat || '';
+  titleEl.classList.remove('error');
+  if (!title) { titleEl.classList.add('error'); showToast('필수 항목을 입력해 주세요'); return; }
+  if (!cat) { showToast('필수 항목을 입력해 주세요'); return; }
+  const reading = loadReading().map(r => r.id === _editingReadingId ? { ...r, title, author, cat } : r);
+  saveReading(reading);
+  document.getElementById('editReadingOverlay').classList.remove('show');
+  renderReading();
+  showToast('✅ 수정됐어요!');
+}
+
+function deleteReadingFromEdit() {
+  const reading = loadReading().filter(r => r.id !== _editingReadingId);
+  saveReading(reading);
+  document.getElementById('editReadingOverlay').classList.remove('show');
+  renderReading();
+  showToast('🗑 삭제됐어요');
 }
 
 function openAddReadingSheet() {
