@@ -289,6 +289,10 @@
       <input type="text" id="bookTitle" placeholder="입력하기">
     </div>
     <div class="field">
+      <label>저자</label>
+      <input type="text" id="bookAuthor" placeholder="입력하기">
+    </div>
+    <div class="field">
       <label>분야 <span style="color:#a855f7;">*</span></label>
       <div class="select-wrap">
         <select id="bookCat" onchange="onCatChange(this)">
@@ -388,15 +392,44 @@
 <div class="overlay" id="sheetOverlay">
   <div class="bottom-sheet">
     <div class="sheet-handle"></div>
-    <div class="sheet-book-title" id="sheetTitle"></div>
-    <div class="sheet-book-meta" id="sheetMeta"></div>
-    <div class="sheet-label">별점</div>
-    <div class="stars-input" id="sheetStars"></div>
-    <div class="sheet-label">내가 몰랐던 것</div>
-    <textarea class="review-input" id="sheetReview" rows="2" placeholder="이 책을 읽고 알게된 내가 몰랐던 것"></textarea>
-    <div class="sheet-btns">
-      <button class="btn-save-review" onclick="saveReview()">저장</button>
-      <button class="btn-del-book" onclick="askDelete()">삭제</button>
+
+    <!-- VIEW 모드 -->
+    <div id="sheetViewMode">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;">
+        <div>
+          <div class="sheet-book-title" id="sheetTitle"></div>
+          <div class="sheet-book-meta" id="sheetMeta"></div>
+          <div id="sheetAuthorView" style="font-size:0.8rem;color:#666;margin-top:4px;"></div>
+        </div>
+        <button onclick="openSheetEditMode()" style="background:none;border:1px solid #3a3a50;border-radius:8px;color:#aaa;font-size:0.78rem;padding:5px 12px;cursor:pointer;font-family:inherit;font-weight:500;flex-shrink:0;margin-left:12px;">편집</button>
+      </div>
+      <div class="sheet-label">별점</div>
+      <div class="stars-input" id="sheetStarsView" style="pointer-events:none;margin-bottom:16px;"></div>
+      <div class="sheet-label">내가 몰랐던 것</div>
+      <div id="sheetReviewView" style="font-size:0.88rem;color:#aaa;min-height:40px;line-height:1.6;padding:8px 0;border-bottom:1px solid #2a2a38;margin-bottom:16px;white-space:pre-wrap;"></div>
+      <div class="sheet-btns">
+        <button class="btn-del-book" onclick="askDelete()">삭제</button>
+      </div>
+    </div>
+
+    <!-- EDIT 모드 -->
+    <div id="sheetEditMode" style="display:none;">
+      <div class="field">
+        <label>제목</label>
+        <input type="text" id="sheetEditTitle" placeholder="입력하기">
+      </div>
+      <div class="field">
+        <label>저자</label>
+        <input type="text" id="sheetEditAuthor" placeholder="입력하기">
+      </div>
+      <div class="sheet-label">별점</div>
+      <div class="stars-input" id="sheetStars" style="margin-bottom:16px;"></div>
+      <div class="sheet-label">내가 몰랐던 것</div>
+      <textarea class="review-input" id="sheetReview" rows="2" placeholder="이 책을 읽고 알게된 내가 몰랐던 것"></textarea>
+      <div class="sheet-btns">
+        <button class="btn-save-review" onclick="saveReview()">저장</button>
+        <button class="btn-save-review" onclick="closeSheetEditMode()" style="background:none;border:1px solid #3a3a50;color:#aaa;">취소</button>
+      </div>
     </div>
   </div>
 </div>
@@ -515,7 +548,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const API = 'https://script.google.com/macros/s/AKfycbx8z5UwPTw0uO07WuCkICAzC7hLSQ4X8EjYqrY8K39ZGE7Pnn7jcjPAvJkydTQM93aTmQ/exec';
+const API = 'https://script.google.com/macros/s/AKfycby7IH6o1IBsqvlUgNbJl45xImCh8UDkD2OMbwP78AJICVoXExoR_KCrEaaCEKM3wObKCQ/exec';
 
 const CATEGORIES = [
   { key:'경제', label:'💰 경제', desc:'돈으로부터 자유로워지기 위한 구조를 배운다' },
@@ -578,9 +611,27 @@ function openSheet(bookId) {
   const rv = (loadReviews())[bookId] || {};
   document.getElementById('sheetTitle').textContent = b.title;
   document.getElementById('sheetMeta').textContent = `${cat?cat.label:b.cat}${b.date?' · '+formatDate(b.date):''}`;
+  document.getElementById('sheetAuthorView').textContent = b.author ? `✍️ ${b.author}` : '';
+  document.getElementById('sheetReviewView').textContent = rv.text || '—';
+  renderStarsTo('sheetStarsView', rv.rating || 0, 'noop');
+  document.getElementById('sheetViewMode').style.display = '';
+  document.getElementById('sheetEditMode').style.display = 'none';
+  document.getElementById('sheetOverlay').classList.add('show');
+}
+function noop() {}
+function openSheetEditMode() {
+  const b = books.find(b => String(b.id) === String(sheetBookId));
+  const rv = (loadReviews())[sheetBookId] || {};
+  document.getElementById('sheetEditTitle').value = b.title;
+  document.getElementById('sheetEditAuthor').value = b.author || '';
   document.getElementById('sheetReview').value = rv.text || '';
   renderSheetStars(rv.rating || 0);
-  document.getElementById('sheetOverlay').classList.add('show');
+  document.getElementById('sheetViewMode').style.display = 'none';
+  document.getElementById('sheetEditMode').style.display = '';
+}
+function closeSheetEditMode() {
+  document.getElementById('sheetViewMode').style.display = '';
+  document.getElementById('sheetEditMode').style.display = 'none';
 }
 function closeSheet() { document.getElementById('sheetOverlay').classList.remove('show'); sheetBookId = null; }
 document.getElementById('sheetOverlay').addEventListener('click', function(e) { if(e.target===this) closeSheet(); });
@@ -615,12 +666,22 @@ function setSheetStar(rating) {
   reviews[sheetBookId].rating = rating;
   saveReviews(reviews); renderSheetStars(rating); render();
 }
-function saveReview() {
+async function saveReview() {
   const text = document.getElementById('sheetReview').value.trim();
+  const title = document.getElementById('sheetEditTitle').value.trim();
+  const author = document.getElementById('sheetEditAuthor').value.trim();
   const reviews = loadReviews();
   if (!reviews[sheetBookId]) reviews[sheetBookId] = {};
   reviews[sheetBookId].text = text;
-  saveReviews(reviews); render(); showToast('✅ 저장됐어요!'); closeSheet();
+  saveReviews(reviews);
+  // 제목/저자 업데이트
+  const b = books.find(b => String(b.id) === String(sheetBookId));
+  if (b) { b.title = title || b.title; b.author = author; }
+  try { await fetch(API, { method:'POST', body:JSON.stringify({ action:'book_edit', id:sheetBookId, title: title||b?.title, author }) }); }
+  catch(e) {}
+  render();
+  showToast('✅ 저장됐어요!');
+  closeSheet();
 }
 
 // ── 삭제 확인 ──
@@ -1187,6 +1248,7 @@ async function addBook() {
   const reviewEl = document.getElementById('addReview');
   const title = titleEl.value.trim();
   const cat = catEl.value;
+  const author = document.getElementById('bookAuthor').value.trim();
   const reviewText = reviewEl.value.trim();
   titleEl.classList.remove('error'); catEl.classList.remove('error'); reviewEl.classList.remove('error');
   let hasError = false;
@@ -1198,24 +1260,22 @@ async function addBook() {
   btn.disabled = true; btn.textContent = '저장 중...';
   const dateVal = bookDateEl.value;
   const date = dateVal ? dateVal : new Date().toISOString().slice(0,10);
-  const newBook = { id: Date.now(), title, cat, date };
+  const newBook = { id: Date.now(), title, author, cat, date };
   try {
     await fetch(API, { method:'POST', body:JSON.stringify({ action:'add', ...newBook }) });
     books.push(newBook);
-    // 별점/내가 몰랐던 것 저장
     if (addStarRating > 0 || reviewText) {
       const reviews = loadReviews();
       reviews[newBook.id] = { rating: addStarRating, text: reviewText };
       saveReviews(reviews);
     }
-    // 폼 초기화
-    titleEl.value = ''; catEl.value = ''; bookDateEl.value = ''; reviewEl.value = '';
+    titleEl.value = ''; document.getElementById('bookAuthor').value = '';
+    catEl.value = ''; bookDateEl.value = ''; reviewEl.value = '';
     catEl.classList.remove('has-value'); datePlaceholderEl.style.opacity='1'; bookDateEl.classList.remove('has-value');
     reviewEl.classList.remove('error');
     addStarRating = 0;
     renderStarsTo('addStars', 0, 'setAddStar');
     render(); 
-    // 완독으로 온 경우 reading에서 삭제
     if (window._completingReadingId) {
       const completedId = window._completingReadingId;
       window._completingReadingId = null;
@@ -1237,6 +1297,7 @@ document.getElementById('bookTitle').addEventListener('input', function() { this
 // ── 읽은 책 등록 바텀시트 ──
 function openAddBookSheet() {
   document.getElementById('bookTitle').value = '';
+  document.getElementById('bookAuthor').value = '';
   document.getElementById('bookCat').value = '';
   document.getElementById('bookCat').classList.remove('has-value');
   bookDateEl.value = ''; datePlaceholderEl.style.opacity = '1'; bookDateEl.classList.remove('has-value');
@@ -1332,6 +1393,7 @@ async function completeReading() {
   document.getElementById('editReadingOverlay').classList.remove('show');
   // 등록 바텀시트 열고 제목/분야 미리 채우기
   document.getElementById('bookTitle').value = r.title;
+  document.getElementById('bookAuthor').value = r.author || '';
   const catEl = document.getElementById('bookCat');
   catEl.value = r.cat;
   catEl.classList.add('has-value');
