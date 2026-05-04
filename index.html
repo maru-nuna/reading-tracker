@@ -233,10 +233,7 @@
 
   <!-- 현재 읽는 책 -->
   <div class="card">
-    <h2 style="display:flex;align-items:center;justify-content:space-between;">
-      <span>📖 현재 읽는 책 <button onclick="openAddReadingSheet()" style="background:linear-gradient(135deg,#6c63ff,#a855f7);border:none;border-radius:20px;color:#fff;font-size:0.72rem;font-weight:600;padding:3px 10px;cursor:pointer;font-family:inherit;margin-left:4px;">+ 추가</button></span>
-      <button id="readingEditBtn" onclick="toggleReadingEditMode()" style="background:none;border:1px solid #3a3a50;border-radius:8px;color:#aaa;font-size:0.78rem;padding:5px 12px;cursor:pointer;font-family:inherit;font-weight:500;">편집</button>
-    </h2>
+    <h2>📖 현재 읽는 책 <button onclick="openAddReadingSheet()" style="background:linear-gradient(135deg,#6c63ff,#a855f7);border:none;border-radius:20px;color:#fff;font-size:0.72rem;font-weight:600;padding:3px 10px;cursor:pointer;font-family:inherit;margin-left:4px;">+ 추가</button></h2>
     <div id="readingList"></div>
   </div>
 
@@ -346,25 +343,43 @@
   </div>
 </div>
 
-<!-- 현재 읽는 책 수정 바텀시트 -->
+<!-- 현재 읽는 책 상세/수정 바텀시트 -->
 <div class="overlay" id="editReadingOverlay">
   <div class="bottom-sheet">
     <div class="sheet-handle"></div>
-    <div class="field">
-      <label>제목 <span style="color:#a855f7;">*</span></label>
-      <input type="text" id="editReadingTitle" placeholder="입력하기">
+    <div id="readingDetailView">
+      <!-- 상세 보기 -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <span id="readingDetailEmoji" style="font-size:2rem;"></span>
+        <div>
+          <div id="readingDetailTitle" style="font-size:1rem;font-weight:700;color:#e8e8f0;"></div>
+          <div id="readingDetailAuthor" style="font-size:0.8rem;color:#666;margin-top:2px;"></div>
+        </div>
+      </div>
+      <div class="sheet-btns">
+        <button class="btn-save-review" onclick="completeReading()" style="background:linear-gradient(135deg,#6c63ff,#a855f7);">✅ 완독</button>
+        <button class="btn-save-review" onclick="showReadingEditForm()" style="background:none;border:1px solid #3a3a50;color:#aaa;">수정</button>
+        <button class="btn-del-book" onclick="deleteReadingFromEdit()">삭제</button>
+      </div>
     </div>
-    <div class="field">
-      <label>저자</label>
-      <input type="text" id="editReadingAuthor" placeholder="입력하기">
-    </div>
-    <div class="field">
-      <label>분야 <span style="color:#a855f7;">*</span></label>
-      <div id="editReadingCatGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:2px;"></div>
-    </div>
-    <div class="sheet-btns" style="margin-top:8px;">
-      <button class="btn-save-review" onclick="saveReadingEdit()">저장</button>
-      <button class="btn-del-book" onclick="deleteReadingFromEdit()">삭제</button>
+    <div id="readingEditView" style="display:none;">
+      <!-- 수정 폼 -->
+      <div class="field">
+        <label>제목 <span style="color:#a855f7;">*</span></label>
+        <input type="text" id="editReadingTitle" placeholder="입력하기">
+      </div>
+      <div class="field">
+        <label>저자</label>
+        <input type="text" id="editReadingAuthor" placeholder="입력하기">
+      </div>
+      <div class="field">
+        <label>분야 <span style="color:#a855f7;">*</span></label>
+        <div id="editReadingCatGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:2px;"></div>
+      </div>
+      <div class="sheet-btns" style="margin-top:8px;">
+        <button class="btn-save-review" onclick="saveReadingEdit()">저장</button>
+        <button class="btn-save-review" onclick="showReadingDetailView()" style="background:none;border:1px solid #3a3a50;color:#aaa;">취소</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1199,7 +1214,19 @@ async function addBook() {
     reviewEl.classList.remove('error');
     addStarRating = 0;
     renderStarsTo('addStars', 0, 'setAddStar');
-    render(); showToast('✅ 등록됐어요!');
+    render(); 
+    // 완독으로 온 경우 reading에서 삭제
+    if (window._completingReadingId) {
+      const completedId = window._completingReadingId;
+      window._completingReadingId = null;
+      reading = reading.filter(r => r.id !== completedId);
+      renderReading();
+      showToast('🎉 완독을 축하해요!');
+      try { await fetch(API, { method:'POST', body:JSON.stringify({ action:'reading_delete', id: completedId }) }); }
+      catch(e) {}
+    } else {
+      showToast('✅ 등록됐어요!');
+    }
     document.getElementById('addBookOverlay').classList.remove('show');
   } catch(e) { showToast('저장 실패. 다시 시도해주세요.'); }
   btn.disabled = false; btn.textContent = '+ 등록하기';
@@ -1226,45 +1253,21 @@ function saveReading(r) { reading = r; }
 
 let readingEditMode = false;
 
-function toggleReadingEditMode() {
-  const reading = loadReading();
-  if (!reading.length) return;
-  readingEditMode = !readingEditMode;
-  const btn = document.getElementById('readingEditBtn');
-  if (readingEditMode) {
-    btn.textContent = '완료';
-    btn.style.color = '#a855f7';
-    btn.style.borderColor = '#a855f7';
-  } else {
-    btn.textContent = '편집';
-    btn.style.color = '';
-    btn.style.borderColor = '';
-  }
-  renderReading();
-}
-
 function renderReading() {
-  const reading = loadReading();
   const el = document.getElementById('readingList');
-  const editBtn = document.getElementById('readingEditBtn');
-  if (editBtn) editBtn.style.display = reading.length ? '' : 'none';
   if (!reading.length) {
-    readingEditMode = false;
     el.innerHTML = '<p class="reading-empty">지금 읽고 있는 책을 추가해보세요</p>';
     return;
   }
   el.innerHTML = reading.map(r => {
     const cat = CATEGORIES.find(c => c.key === r.cat);
-    return `<div class="reading-item">
+    return `<div class="reading-item" onclick="openEditReadingSheet('${r.id}')" style="cursor:pointer;">
       <span class="reading-cat-badge">${cat ? cat.label.split(' ')[0] : '📚'}</span>
       <div class="reading-info">
         <div class="reading-title">${r.title}</div>
         ${r.author ? `<div class="reading-author">${r.author}</div>` : ''}
       </div>
-      ${readingEditMode ? `
-        <button class="reading-del" onclick="openEditReadingSheet('${r.id}')" style="color:#6c63ff;margin-right:2px;">✏️</button>
-        <button class="reading-del" onclick="deleteReading('${r.id}')">✕</button>
-      ` : ''}
+      <span style="color:#3a3a50;font-size:1.2rem;font-weight:700;">›</span>
     </div>`;
   }).join('');
 }
@@ -1279,14 +1282,28 @@ async function deleteReading(id) {
 let _editingReadingId = null;
 
 function openEditReadingSheet(id) {
-  const r = loadReading().find(r => r.id === id);
+  const r = reading.find(r => r.id === id);
   if (!r) return;
   _editingReadingId = id;
+  const cat = CATEGORIES.find(c => c.key === r.cat);
+  document.getElementById('readingDetailEmoji').textContent = cat ? cat.label.split(' ')[0] : '📚';
+  document.getElementById('readingDetailTitle').textContent = r.title;
+  document.getElementById('readingDetailAuthor').textContent = r.author || '';
+  showReadingDetailView();
+  document.getElementById('editReadingOverlay').classList.add('show');
+}
+
+function showReadingDetailView() {
+  document.getElementById('readingDetailView').style.display = '';
+  document.getElementById('readingEditView').style.display = 'none';
+}
+
+function showReadingEditForm() {
+  const r = reading.find(r => r.id === _editingReadingId);
+  if (!r) return;
   document.getElementById('editReadingTitle').value = r.title;
   document.getElementById('editReadingAuthor').value = r.author || '';
-  // 분야 그리드 - 수정 시에는 현재 항목 분야는 사용 가능하게
-  const reading = loadReading();
-  const usedCats = reading.filter(item => item.id !== id).map(item => item.cat);
+  const usedCats = reading.filter(item => item.id !== _editingReadingId).map(item => item.cat);
   window._editSelectedReadingCat = r.cat;
   const grid = document.getElementById('editReadingCatGrid');
   grid.innerHTML = CATEGORIES.map(c => {
@@ -1296,15 +1313,37 @@ function openEditReadingSheet(id) {
       style="padding:8px 4px;border-radius:10px;
       border:1.5px solid ${selected?'#6c63ff':used?'#222':'#2a2a38'};
       background:${selected?'#1e1e2e':used?'#181820':'#1a1a24'};
-      color:${used?'#3a3a3a':'#e8e8f0'};
-      font-size:0.78rem;cursor:${used?'default':'pointer'};font-family:inherit;
+      color:${used?'#3a3a3a':'#e8e8f0'};font-size:0.78rem;
+      cursor:${used?'default':'pointer'};font-family:inherit;
       display:flex;flex-direction:column;align-items:center;gap:3px;
       opacity:${used?'0.35':'1'};transition:all 0.15s;">
       <span style="font-size:1.2rem;">${c.label.split(' ')[0]}</span>
       <span>${c.label.split(' ')[1]}</span>
     </button>`;
   }).join('');
-  document.getElementById('editReadingOverlay').classList.add('show');
+  document.getElementById('readingDetailView').style.display = 'none';
+  document.getElementById('readingEditView').style.display = '';
+}
+
+async function completeReading() {
+  const r = reading.find(r => r.id === _editingReadingId);
+  if (!r) return;
+  // 상세 시트 닫기
+  document.getElementById('editReadingOverlay').classList.remove('show');
+  // 등록 바텀시트 열고 제목/분야 미리 채우기
+  document.getElementById('bookTitle').value = r.title;
+  const catEl = document.getElementById('bookCat');
+  catEl.value = r.cat;
+  catEl.classList.add('has-value');
+  bookDateEl.value = new Date().toISOString().slice(0,10);
+  bookDateEl.classList.add('has-value');
+  datePlaceholderEl.style.opacity = '0';
+  document.getElementById('addReview').value = '';
+  addStarRating = 0;
+  renderStarsTo('addStars', 0, 'setAddStar');
+  // 완독 플래그 저장 (addBook에서 reading 삭제에 사용)
+  window._completingReadingId = _editingReadingId;
+  document.getElementById('addBookOverlay').classList.add('show');
 }
 document.getElementById('editReadingOverlay').addEventListener('click', function(e) { if(e.target===this) this.classList.remove('show'); });
 
