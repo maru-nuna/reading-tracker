@@ -515,6 +515,7 @@ const CATEGORIES = [
 
 let books = [];
 let wishlist = [];
+let reading = [];
 let sheetBookId = null;
 let editingWishId = null;
 let wishCatKey = null;
@@ -1142,6 +1143,8 @@ async function loadBooks() {
     const data = await res.json();
     books = data.books || [];
     wishlist = data.wishlist || [];
+    reading = data.reading || [];
+    localStorage.removeItem('reading');
     setSyncStatus('', '');
     render();
   } catch(e) {
@@ -1218,8 +1221,8 @@ function openAddBookSheet() {
 document.getElementById('addBookOverlay').addEventListener('click', function(e) { if(e.target===this) this.classList.remove('show'); });
 
 // ── 현재 읽는 책 ──
-function loadReading() { try { return JSON.parse(localStorage.getItem('reading') || '[]'); } catch { return []; } }
-function saveReading(r) { localStorage.setItem('reading', JSON.stringify(r)); }
+function loadReading() { return reading; }
+function saveReading(r) { reading = r; }
 
 let readingEditMode = false;
 
@@ -1266,11 +1269,11 @@ function renderReading() {
   }).join('');
 }
 
-function deleteReading(id) {
-  const reading = loadReading().filter(r => r.id !== id);
-  saveReading(reading);
+async function deleteReading(id) {
+  reading = reading.filter(r => r.id !== id);
   renderReading();
-  renderReadingCatGrid();
+  try { await fetch(API, { method:'POST', body:JSON.stringify({ action:'reading_delete', id }) }); }
+  catch(e) { showToast('삭제 실패. 다시 시도해주세요.'); }
 }
 
 let _editingReadingId = null;
@@ -1317,7 +1320,7 @@ function selectEditReadingCat(key, used) {
   window._editSelectedReadingCat = key;
 }
 
-function saveReadingEdit() {
+async function saveReadingEdit() {
   const titleEl = document.getElementById('editReadingTitle');
   const title = titleEl.value.trim();
   const author = document.getElementById('editReadingAuthor').value.trim();
@@ -1325,19 +1328,21 @@ function saveReadingEdit() {
   titleEl.classList.remove('error');
   if (!title) { titleEl.classList.add('error'); showToast('필수 항목을 입력해 주세요'); return; }
   if (!cat) { showToast('필수 항목을 입력해 주세요'); return; }
-  const reading = loadReading().map(r => r.id === _editingReadingId ? { ...r, title, author, cat } : r);
-  saveReading(reading);
+  reading = reading.map(r => r.id === _editingReadingId ? { ...r, title, author, cat } : r);
   document.getElementById('editReadingOverlay').classList.remove('show');
   renderReading();
   showToast('✅ 수정됐어요!');
+  try { await fetch(API, { method:'POST', body:JSON.stringify({ action:'reading_edit', id:_editingReadingId, title, author, cat }) }); }
+  catch(e) { showToast('저장 실패. 다시 시도해주세요.'); }
 }
 
-function deleteReadingFromEdit() {
-  const reading = loadReading().filter(r => r.id !== _editingReadingId);
-  saveReading(reading);
+async function deleteReadingFromEdit() {
+  reading = reading.filter(r => r.id !== _editingReadingId);
   document.getElementById('editReadingOverlay').classList.remove('show');
   renderReading();
   showToast('🗑 삭제됐어요');
+  try { await fetch(API, { method:'POST', body:JSON.stringify({ action:'reading_delete', id:_editingReadingId }) }); }
+  catch(e) { showToast('삭제 실패. 다시 시도해주세요.'); }
 }
 
 function openAddReadingSheet() {
@@ -1379,7 +1384,7 @@ function selectReadingCat(key, used) {
   window._selectedReadingCat = key;
 }
 
-function addReading() {
+async function addReading() {
   const titleEl = document.getElementById('readingTitle');
   const title = titleEl.value.trim();
   const author = document.getElementById('readingAuthor').value.trim();
@@ -1387,13 +1392,14 @@ function addReading() {
   titleEl.classList.remove('error');
   if (!title) { titleEl.classList.add('error'); showToast('필수 항목을 입력해 주세요'); return; }
   if (!cat) { showToast('필수 항목을 입력해 주세요'); return; }
-  const reading = loadReading();
-  reading.push({ id: String(Date.now()), title, author, cat });
-  saveReading(reading);
+  const newItem = { id: String(Date.now()), title, author, cat };
+  reading.push(newItem);
   window._selectedReadingCat = '';
   document.getElementById('addReadingOverlay').classList.remove('show');
   renderReading();
   showToast('✅ 추가됐어요!');
+  try { await fetch(API, { method:'POST', body:JSON.stringify({ action:'reading_add', ...newItem }) }); }
+  catch(e) { showToast('저장 실패. 다시 시도해주세요.'); }
 }
 
 function getCounts() {
