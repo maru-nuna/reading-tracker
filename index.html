@@ -1213,7 +1213,6 @@ function spinRoulette() {
 // ── 데이터 로드 ──
 async function loadBooks() {
   setSyncStatus('동기화 중...', '');
-  render();
   try {
     const res = await fetch(API);
     const data = await res.json();
@@ -1568,7 +1567,6 @@ function drawRadar(counts) {
 document.getElementById('bookTitle').addEventListener('keydown', e => { if(e.key==='Enter') addBook(); });
 document.getElementById('addWishInputTitle').addEventListener('keydown', e => { if(e.key==='Enter') addWishFromSheet(); });
 renderStarsTo('addStars', 0, 'setAddStar');
-renderReading();
 loadBooks();
 </script>
 </body>
